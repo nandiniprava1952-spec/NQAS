@@ -636,6 +636,27 @@ button,select,input,textarea{touch-action:manipulation}input,select,textarea{fon
 #summaryPage .score-panel:has(#departmentScoreCards){display:none!important;}
 @media(max-width:700px){#summaryPage #summaryOverall.workbook-score-grid{grid-template-columns:1fr!important;}}
 </style>
+<style id="qat-update-css">
+#qatUpd{position:fixed;top:calc(10px + env(safe-area-inset-top));left:10px;right:10px;max-width:460px;margin:0 auto;z-index:10000;display:flex;align-items:center;gap:12px;background:#4b1f68;color:#fff;border:1px solid #9333ea;border-radius:14px;padding:10px 12px;font:14px Calibri,Arial,sans-serif;box-shadow:0 8px 24px #0009}
+#qatUpd[hidden],#qatUpd [hidden]{display:none}
+#qatUpd .qu-ring{position:relative;width:44px;height:44px;flex:none}
+#qatUpd svg{width:44px;height:44px;transform:rotate(-90deg)}
+#qatUpd circle{fill:none;stroke-width:4}
+#qatUpd .qu-bg{stroke:#ffffff30}
+#qatUpd .qu-fg{stroke:#c084fc;stroke-linecap:round;stroke-dasharray:113.1;stroke-dashoffset:113.1;transition:stroke-dashoffset .25s ease}
+#qatUpd .qu-pct{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font:700 11px Calibri,Arial,sans-serif}
+#qatUpd.qu-install svg{animation:qu-spin .9s linear infinite}
+#qatUpd.qu-install .qu-fg{stroke-dashoffset:80;transition:none}
+#qatUpd.qu-done{border-color:#4ade80}#qatUpd.qu-done .qu-fg{stroke:#4ade80}
+#qatUpd .qu-txt{flex:1;min-width:0;display:flex;flex-direction:column}
+#qatUpd .qu-t{font-size:14.5px}#qatUpd .qu-s{font-size:12px;opacity:.8}
+#qatUpd .qu-btns{display:flex;gap:6px;flex:none}
+#qatUpd button{border:0;border-radius:8px;padding:8px 12px;font:700 13px Calibri,Arial,sans-serif;cursor:pointer}
+#qatUpd .qu-go{background:#fff;color:#4b1f68}
+#qatUpd .qu-later{background:transparent;color:#fff;border:1px solid #ffffff66}
+@keyframes qu-spin{to{transform:rotate(270deg)}}
+@media (prefers-reduced-motion:reduce){#qatUpd.qu-install svg{animation-duration:2.4s}}
+</style>
 </head>
 <body>
 <div class="topbar">
@@ -3133,12 +3154,45 @@ $('qbInst').onclick=function(){
  T.style.display='block';clearTimeout(T.__t);T.__t=setTimeout(function(){T.style.display='none'},9000)};
 T.onclick=function(){T.style.display='none'}})();
 </script>
+<div id="qatUpd" role="status" aria-live="polite" hidden><div class="qu-ring"><svg viewBox="0 0 44 44" aria-hidden="true"><circle class="qu-bg" cx="22" cy="22" r="18"/><circle class="qu-fg" cx="22" cy="22" r="18"/></svg><span class="qu-pct"></span></div><div class="qu-txt"><b class="qu-t"></b><small class="qu-s"></small></div><div class="qu-btns" hidden><button type="button" class="qu-go">Update</button><button type="button" class="qu-later">Later</button></div></div>
 <div id="pwaBar"><span id="pwaMsg"></span><button id="pwaGo"></button></div>
 <script id="pwa-register">
-(function(){var bar=document.getElementById('pwaBar'),msg=document.getElementById('pwaMsg'),go=document.getElementById('pwaGo'),dp=null;
-function show(t,b,f){msg.textContent=t;go.textContent=b;go.onclick=function(){bar.style.display='none';f()};bar.style.display='flex'}
-addEventListener('beforeinstallprompt',function(e){e.preventDefault();dp=e;window.__dp=e});
-if('serviceWorker' in navigator&&/^https?:$/.test(location.protocol)){addEventListener('load',function(){navigator.serviceWorker.register('sw.js').then(function(r){r.addEventListener('updatefound',function(){var n=r.installing;n.addEventListener('statechange',function(){if(n.state==='installed'&&navigator.serviceWorker.controller)show('A new version is ready.','Update',function(){n.postMessage('skip')})})})});var rl;navigator.serviceWorker.addEventListener('controllerchange',function(){if(rl)return;rl=1;location.reload()})})}})();
+(function(){
+var card=document.getElementById('qatUpd');if(!card)return;
+var q=function(s){return card.querySelector(s)},fg=q('.qu-fg'),pe=q('.qu-pct'),tt=q('.qu-t'),ss=q('.qu-s'),bt=q('.qu-btns'),go=q('.qu-go'),later=q('.qu-later');
+var C=113.1,reg=null,state='idle',tapAt=0,hideT=0;
+addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__dp=e});
+function hide(){clearTimeout(hideT);card.hidden=true}
+/* mode: down (progress ring) | ready (Update / Later) | install (spinner) | done (confirmation) */
+function show(mode,pct){clearTimeout(hideT);card.hidden=false;card.className='qu-'+mode;bt.hidden=mode!=='ready';
+ if(mode==='down'){tt.textContent='Downloading update…';ss.textContent='Keep the app open';pe.textContent=pct+'%';fg.style.strokeDashoffset=C*(1-pct/100)}
+ else if(mode==='ready'){tt.textContent='Update available';ss.textContent='A new version is ready to install.';pe.textContent='100%';fg.style.strokeDashoffset=0}
+ else if(mode==='install'){tt.textContent='Installing update…';ss.textContent='The app will restart on its own.';pe.textContent='';fg.style.strokeDashoffset=''}
+ else{tt.textContent='✔ Updated to the latest version';ss.textContent='';pe.textContent='';fg.style.strokeDashoffset=0}}
+function track(w){if(!w||w._qt||!navigator.serviceWorker.controller||state==='install')return;w._qt=1;state='down';show('down',0);
+ w.addEventListener('statechange',function(){
+  if(w.state==='installed'){state='ready';show('down',100);setTimeout(function(){if(state==='ready'&&!card.hidden&&card.className==='qu-down')show('ready')},500)}
+  else if(w.state==='redundant'&&state==='down'){state='idle';hide()}})}
+navigator.serviceWorker&&navigator.serviceWorker.addEventListener('message',function(e){var d=e.data;if(d&&d.type==='qat-progress'&&state==='down')show('down',d.pct)});
+go.onclick=function(){var w=reg&&reg.waiting;if(!w){state='idle';hide();return}
+ state='install';tapAt=Date.now();show('install');w.postMessage('skip');setTimeout(function(){if(state==='install')location.reload()},10000)};
+later.onclick=function(){hide()}; /* stays hidden until the next check */
+/* check: on open, on return to the app, every 30 min */
+function check(){if(!reg)return;reg.update().catch(function(){}).then(function(){
+ if(reg.waiting&&navigator.serviceWorker.controller&&(state==='idle'||state==='ready')&&card.hidden){state='ready';show('ready')}})}
+if('serviceWorker' in navigator&&/^https?:$/.test(location.protocol)){
+ var rl,prevCtl=navigator.serviceWorker.controller;navigator.serviceWorker.addEventListener('controllerchange',function(){var was=prevCtl;prevCtl=navigator.serviceWorker.controller;if(!was||rl)return;rl=1;try{localStorage.setItem('qat_updated','1')}catch(e){}
+  if(state!=='install'){state='install';show('install')}
+  setTimeout(function(){location.reload()},Math.max(0,900-(Date.now()-tapAt)))});
+ /* after the restart */
+ try{if(localStorage.getItem('qat_updated')){localStorage.removeItem('qat_updated');show('done');hideT=setTimeout(hide,4500)}}catch(e){}
+ addEventListener('load',function(){navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(function(r){reg=r;
+  r.addEventListener('updatefound',function(){track(r.installing)});
+  if(r.installing)track(r.installing);
+  else if(r.waiting&&navigator.serviceWorker.controller){state='ready';show('ready')}
+  check();setInterval(check,30*60*1000);
+  document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible')check()})})})}
+})();
 </script>
 </body>
 </html>

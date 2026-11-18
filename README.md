@@ -25,7 +25,9 @@ Cloud sync uses your existing Google Apps Script web app (`Code.gs`, unchanged).
 The cover shows an illustrated hospital scene. To use your own photos instead, add `images/cover-1.jpg` (and optionally `cover-2.jpg`, `cover-3.jpg`) — see `images/README.txt`. The ⌂ Home button in the app returns to the cover.
 
 ## Updating
-Replace `index.html` (or any file), then change `VERSION` in `sw.js` (e.g. `v2`) and push. Users get an "Update" prompt.
+Replace `index.html` (or any file), then change `VERSION` in `sw.js` (e.g. `v14`) and push.
+
+What users see: the app checks for a new version when it opens, when the user returns to it, and every 30 minutes. A card at the top shows a progress ring with a percentage (“Downloading update…”); at 100% it becomes “Update available” with **Update** and **Later** (Later hides it until the next check). Tapping Update shows a spinning ring (“Installing update…”), the app restarts by itself, and “✔ Updated to the latest version” appears. Progress is real: `sw.js` downloads each core file itself and reports bytes to the page.
 
 ## Logins (district + block + facility)
 The login screen has District, an optional Block (blank = district login), an optional Facility (blank = block login) and Password. Block and facility users are locked to their block / facility. Block users are locked to their district and block. Passcodes and the server live in the Google Sheet behind `Code.gs`: import `passcodes_sheet.csv` (district, block and facility passcodes) into a tab named `Passcodes`, then deploy `Code.gs` as a web app (see its header).
