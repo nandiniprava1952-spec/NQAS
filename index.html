@@ -46,6 +46,15 @@ button,select,input,textarea{touch-action:manipulation}input,select,textarea{fon
   .brand h1{margin:0;font-size:19px;letter-spacing:.2px;}
   .brand p{margin:2px 0 0;font-size:12.5px;opacity:.9;}
   .toolbar{display:flex;gap:8px;flex-wrap:wrap;}
+  #nqasActions{padding-top:0;padding-bottom:0}#nqasActions .score-panel{margin-bottom:0}
+  #nqasActions .kk-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  #nqasActions .btn{flex:none;min-height:0;border:1px solid #7a4a9f;background:#ffffff14;color:var(--ink);padding:7px 12px;border-radius:8px;font:inherit;font-size:13px;cursor:pointer}
+  #nqasActions .btn:hover{background:#ffffff2a}
+  #nqasActions .btn.primary{background:var(--brand-600);border-color:var(--brand-600);color:#fff;font-weight:700}
+  @media(max-width:700px){#nqasActions .btn{min-height:42px}}
+  #nqasActions .btn.qat-save,#kayakalpPage .kk-b.qat-save{background:#166534;border-color:#4ade80;color:#fff;font-weight:700}
+  #qatToast{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:10000;max-width:min(92vw,520px);padding:11px 16px;border-radius:10px;background:#1d1030;border:1px solid #7a4a9f;color:#fff;font:600 14px Calibri,Arial,sans-serif;box-shadow:0 6px 24px #0008;text-align:center}
+  #qatToast.ok{border-color:#4ade80}#qatToast.warn{border-color:#fbbf24}
   .qat-status{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;width:100%;margin:0 0 10px}
   .qat-st-l{display:flex;align-items:center;flex:0 0 auto;min-height:36px}
   .qat-st-l .qat-lg{margin-left:0}
@@ -674,13 +683,7 @@ button,select,input,textarea{touch-action:manipulation}input,select,textarea{fon
         <h1>Quality Assessment Toolkit</h1>
         <p>NQAS (National Quality Assurance Standards) · Kayakalp (Clean Hospitals)</p>
       </div>
-      <div class="toolbar">
-        <button class="btn" id="btnReset">Reset facility answers</button>
-        <button class="btn" id="btnDownloadBlank">Download Blank Checklist</button>
-        <input type="file" id="xlsxTemplateInput" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" style="display:none;">
-        <button class="btn" id="btnExport">Download Filled Checklist</button>
-        <button class="btn primary" id="btnPrint">Upload External XLSX</button>
-      </div>
+      <div class="toolbar"></div>
     </div>
     <div class="comp-switch" id="compSwitch"><button type="button" class="comp on" id="compNQAS">NQAS</button><button type="button" class="comp" id="compKK">Kayakalp</button><button type="button" class="comp" id="compHome" title="Cover page">⌂ Home</button></div>
     <div class="facility-select-row" style="margin-top:12px;display:block !important;width:100%;">
@@ -704,8 +707,10 @@ button,select,input,textarea{touch-action:manipulation}input,select,textarea{fon
         <option value="District">District</option>
         <option value="State">State</option>
       </select>
-      <input type="text" id="metaAssessor1" class="meta-conditional" placeholder="Assessor 1 name">
-      <input type="text" id="metaAssessor2" class="meta-conditional" placeholder="Assessor 2 name">
+      <input type="text" id="metaAssessor1" placeholder="Assessor 1 name">
+      <input type="text" id="metaDesig1" placeholder="Assessor 1 designation">
+      <input type="text" id="metaAssessor2" placeholder="Assessor 2 name">
+      <input type="text" id="metaDesig2" placeholder="Assessor 2 designation">
       <input type="date" id="metaStartDate" title="Start date">
       <input type="date" id="metaEndDate" title="End date">
       <input type="hidden" id="metaFacilityName">
@@ -720,6 +725,15 @@ button,select,input,textarea{touch-action:manipulation}input,select,textarea{fon
   <button class="page-tab page-tab-link" type="button" data-page="summaryPage" title="Open General Details / Hospital Score Card" onclick="window.openNQASPage && window.openNQASPage('summaryPage', this)">2. General Details / Hospital Score Card</button>
   <button class="page-tab page-tab-link" type="button" data-page="repositoryPage" title="Open NQAS Upload Repository">3. NQAS Upload Repository</button>
 </div>
+
+<div class="wrap" id="nqasActions"><div class="score-panel"><div class="kk-row">
+          <button class="btn qat-save" id="btnSave" type="button">💾 Save</button>
+          <button class="btn" id="btnReset">Reset facility answers</button>
+          <button class="btn" id="btnDownloadBlank">Download Blank Checklist</button>
+          <input type="file" id="xlsxTemplateInput" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" style="display:none;">
+          <button class="btn" id="btnExport">Download Filled Checklist</button>
+          <button class="btn primary" id="btnPrint">Upload External XLSX</button>
+</div></div></div>
 
 <div id="assessmentPage" class="app-page active">
   <div class="wrap">
@@ -741,7 +755,9 @@ button,select,input,textarea{touch-action:manipulation}input,select,textarea{fon
         <div class="field-card"><label>Assessment Start Date</label><input id="gdStartDate" type="date"></div>
         <div class="field-card"><label>Assessment End Date</label><input id="gdEndDate" type="date"></div>
         <div class="field-card"><label>Assessor 1</label><input id="gdAssessor1" type="text"></div>
+        <div class="field-card"><label>Assessor 1 designation</label><input id="gdDesig1" type="text"></div>
         <div class="field-card"><label>Assessor 2</label><input id="gdAssessor2" type="text"></div>
+        <div class="field-card"><label>Assessor 2 designation</label><input id="gdDesig2" type="text"></div>
         <div class="field-card"><label>Remarks / Doubts</label><textarea id="gdRemarks" placeholder="General remarks"></textarea></div>
       </div>
     </div>
@@ -822,7 +838,7 @@ button,select,input,textarea{touch-action:manipulation}input,select,textarea{fon
 <div class="score-panel"><div class="section-title">Kayakalp — Clean Hospitals Assessment</div>
 <p class="kk-n" style="margin:0 0 10px">Uses the district / block / facility / assessment details selected in the bar above. Scoring: 0 Non-compliant · 1 Partial · 2 Compliant. Method: OB Observation · SI Staff Interview · PI Patient Interview · RR Record Review.</p>
 <div class="kk-row"><select id="kkType" style="min-width:270px;font-weight:700"><option value="">Select Kayakalp checklist…</option></select>
-<button class="kk-b" id="kkReset">Reset answers</button><button class="kk-b" id="kkBlank">Download Blank</button><button class="kk-b" id="kkFill">Download Filled</button><button class="kk-b p" id="kkUp">Upload filled XLSX</button><input type="file" id="kkFile" accept=".xlsx" hidden><button class="kk-b" id="kkList">Saved Kayakalp assessments</button><span class="kk-n" id="kkSt"></span></div>
+<button class="kk-b qat-save" id="kkSave" type="button">💾 Save</button><button class="kk-b" id="kkReset">Reset answers</button><button class="kk-b" id="kkBlank">Download Blank</button><button class="kk-b" id="kkFill">Download Filled</button><button class="kk-b p" id="kkUp">Upload filled XLSX</button><input type="file" id="kkFile" accept=".xlsx" hidden><button class="kk-b" id="kkList">Saved Kayakalp assessments</button><span class="kk-n" id="kkSt"></span></div>
 <div id="kkSaved"></div></div>
 <div id="kkV1" class="kk-v on"><div class="score-panel" id="kkTop"></div><div id="kkListEl"></div></div>
 <div id="kkV2" class="kk-v"></div>
@@ -1256,11 +1272,11 @@ function validateAssessmentDate(el){
 // Page 2: General Details / Hospital Score Card
 function syncGeneralDetails(){
   const m=getMeta();
-  const map={gdFacilityName:m.facility_name||"",gdFacilityType:m.facility_type||"",gdDistrict:m.district||"",gdBlock:m.block||"",gdAssessmentType:m.assessment_type||"",gdStartDate:m.start_date||"",gdEndDate:m.end_date||"",gdAssessor1:m.assessor_1||"",gdAssessor2:m.assessor_2||""};
+  const map={gdFacilityName:m.facility_name||"",gdFacilityType:m.facility_type||"",gdDistrict:m.district||"",gdBlock:m.block||"",gdAssessmentType:m.assessment_type||"",gdStartDate:m.start_date||"",gdEndDate:m.end_date||"",gdAssessor1:m.assessor_1||"",gdAssessor2:m.assessor_2||"",gdDesig1:m.designation_1||"",gdDesig2:m.designation_2||""};
   Object.entries(map).forEach(([id,v])=>{const el=document.getElementById(id); if(el && el.value!==v) el.value=v;});
 }
 function saveGeneralDetails(){
-  const pairs={metaFacilityName:"gdFacilityName",metaDistrict:"gdDistrict",metaBlock:"gdBlock",metaAssessmentType:"gdAssessmentType",metaStartDate:"gdStartDate",metaEndDate:"gdEndDate",metaAssessor1:"gdAssessor1",metaAssessor2:"gdAssessor2"};
+  const pairs={metaFacilityName:"gdFacilityName",metaDistrict:"gdDistrict",metaBlock:"gdBlock",metaAssessmentType:"gdAssessmentType",metaStartDate:"gdStartDate",metaEndDate:"gdEndDate",metaAssessor1:"gdAssessor1",metaAssessor2:"gdAssessor2",metaDesig1:"gdDesig1",metaDesig2:"gdDesig2"};
   Object.entries(pairs).forEach(([src,dst])=>{const a=document.getElementById(src),b=document.getElementById(dst); if(a&&b){a.value=b.value; a.dispatchEvent(new Event('change',{bubbles:true}));}});
 }
 function pctSafe(a,b){return b?Math.min(100,Math.max(0,Math.round((a/b)*1000)/10)):0;}
@@ -1641,7 +1657,7 @@ if(certPSSEl){
   certPSSEl.addEventListener('change',()=>{ savePSS(currentFacility); buildSummaryPage(); });
 }
 
-['gdFacilityName','gdDistrict','gdBlock','gdAssessmentType','gdStartDate','gdEndDate','gdAssessor1','gdAssessor2'].forEach(id=>{
+['gdFacilityName','gdDistrict','gdBlock','gdAssessmentType','gdStartDate','gdEndDate','gdAssessor1','gdAssessor2','gdDesig1','gdDesig2'].forEach(id=>{
   const el=document.getElementById(id);
   if(el) el.addEventListener('change',()=>{
     if((id==='gdStartDate'||id==='gdEndDate') && !validateAssessmentDate(el)) return;
@@ -1693,6 +1709,8 @@ function getMeta(){
     assessment_type: document.getElementById("metaAssessmentType").value,
     assessor_1: document.getElementById("metaAssessor1").value,
     assessor_2: document.getElementById("metaAssessor2").value,
+    designation_1: document.getElementById("metaDesig1").value,
+    designation_2: document.getElementById("metaDesig2").value,
     start_date: document.getElementById("metaStartDate").value,
     end_date: document.getElementById("metaEndDate").value,
     facility_type: NQAS_DATA[currentFacility].label
@@ -1971,7 +1989,7 @@ function extractUploadedMeta(wb){
   const aliases = {
     facility_name:["facility name","facility / hospital name","hospital name","facility / sub-centre","facility/sub-centre"],
     district:["district"], block:["block","block / urban area","urban area"],
-    assessment_type:["assessment type"], assessor_1:["assessor 1","assessor 1 name"], assessor_2:["assessor 2","assessor 2 name"],
+    assessment_type:["assessment type"], assessor_1:["assessor 1","assessor 1 name"], assessor_2:["assessor 2","assessor 2 name"], designation_1:["assessor 1 designation","designation 1"], designation_2:["assessor 2 designation","designation 2"],
     start_date:["start date","assessment start date"], end_date:["end date","assessment end date"], facility_type:["facility type"],
     pss:["patient satisfaction score","patient satisfaction score (%)","pss","pss (%)"]
   };
@@ -2080,12 +2098,14 @@ async function importUploadedWorkbookIntoApp(wb){
   setMeta("metaAssessmentType",meta.assessment_type||"");
   setMeta("metaAssessor1",meta.assessor_1||"");
   setMeta("metaAssessor2",meta.assessor_2||"");
+  setMeta("metaDesig1",meta.designation_1||"");
+  setMeta("metaDesig2",meta.designation_2||"");
   setMeta("metaStartDate",meta.start_date||"");
   setMeta("metaEndDate",meta.end_date||"");
   setMeta("metaFacilityName",meta.facility_name||"");
   const hiddenFacilityType=document.getElementById("metaFacilityName");
   if(hiddenFacilityType && !hiddenFacilityType.value && meta.facility_name) hiddenFacilityType.value=meta.facility_name;
-  const pairs={gdFacilityName:meta.facility_name||"",gdFacilityType:NQAS_DATA[detected].label||detected,gdDistrict:meta.district||"",gdBlock:meta.block||"",gdAssessmentType:meta.assessment_type||"",gdStartDate:meta.start_date||"",gdEndDate:meta.end_date||"",gdAssessor1:meta.assessor_1||"",gdAssessor2:meta.assessor_2||""};
+  const pairs={gdFacilityName:meta.facility_name||"",gdFacilityType:NQAS_DATA[detected].label||detected,gdDistrict:meta.district||"",gdBlock:meta.block||"",gdAssessmentType:meta.assessment_type||"",gdStartDate:meta.start_date||"",gdEndDate:meta.end_date||"",gdAssessor1:meta.assessor_1||"",gdAssessor2:meta.assessor_2||"",gdDesig1:meta.designation_1||"",gdDesig2:meta.designation_2||""};
   Object.entries(pairs).forEach(([id,v])=>setMeta(id,v));
   const pss=meta.pss!==undefined?String(meta.pss).replace(/%/g,"").trim():"";
   const pssEl=document.getElementById("certPSS");
@@ -2164,7 +2184,7 @@ async function updateUploadedWorkbook(wb){
       ["facility name", meta.facility_name], ["facility", meta.facility_name],
       ["district", meta.district], ["block", meta.block],
       ["assessment type", meta.assessment_type], ["assessor 1", meta.assessor_1],
-      ["assessor 2", meta.assessor_2], ["start date", meta.start_date],
+      ["assessor 2", meta.assessor_2], ["assessor 1 designation", meta.designation_1], ["assessor 2 designation", meta.designation_2], ["start date", meta.start_date],
       ["end date", meta.end_date], ["facility type", meta.facility_type]
     ];
     const maxRows = Math.min(sheet.rowCount || 0, 60);
@@ -2494,7 +2514,9 @@ document.getElementById("btnExport").addEventListener("click", async ()=>{
     ["Block", meta.block],
     ["Assessment type", meta.assessment_type],
     ["Assessor 1", meta.assessor_1],
+    ["Assessor 1 designation", meta.designation_1],
     ["Assessor 2", meta.assessor_2],
+    ["Assessor 2 designation", meta.designation_2],
     ["Start date", meta.start_date],
     ["End date", meta.end_date],
     ["Facility type", meta.facility_type],
@@ -2695,12 +2717,7 @@ document.getElementById("metaFacilitySel").addEventListener("input", function(){
 
 function updateAssessorFields(){
   const assessmentType = document.getElementById("metaAssessmentType").value;
-  const shouldShow = assessmentType === "District" || assessmentType === "State";
-  ["metaAssessor1", "metaAssessor2"].forEach(id=>{
-    const el = document.getElementById(id);
-    el.classList.toggle("show", shouldShow);
-    if(!shouldShow) el.value = "";
-  });
+  /* assessor name / designation fields are always shown and kept (no longer limited to District / State) */
 }
 
 document.getElementById("metaAssessmentType").addEventListener("change", updateAssessorFields);
@@ -2799,7 +2816,7 @@ $('kkType').innerHTML+=Object.keys(KK).map(k=>`<option value="${k}">${esc(KK[k].
 const selTxt=id=>{const s=$(id);return s&&s.value?s.options[s.selectedIndex].text:''};
 const dName=()=>selTxt('metaDistrictSel'),bName=()=>selTxt('metaBlockSel');
 const fRaw=()=>($('metaFacilitySel').value||'').trim(),fName=()=>($('metaFacilityName').value||fRaw().replace(/\s*\((SDH|CHC|PHC|Sub-Centre|UPHC|DHH)\)$/,'')).trim();
-const MF={metaAssessmentType:'atype',metaAssessor1:'a1',metaAssessor2:'a2',metaStartDate:'start',metaEndDate:'end'};
+const MF={metaAssessmentType:'atype',metaAssessor1:'a1',metaAssessor2:'a2',metaDesig1:'d1',metaDesig2:'d2',metaStartDate:'start',metaEndDate:'end'};
 const getMeta=()=>{const m={district:dName(),block:bName(),facility_name:fName(),checklist:cur,remarks:($('kkR')||{}).value||''};for(const i in MF)m[MF[i]]=$(i).value;return m};
 const mk=()=>['kk',cur,dName(),fName()].join('|').toLowerCase(),isDraft=k=>/\|$/.test(k);
 function persist(){if(!cur||applying||!key)return;sset(key,{a:A,m:getMeta()});sched()}
@@ -2820,7 +2837,7 @@ $('kkListEl').addEventListener('click',e=>{const b=e.target.closest('button[data
 $('kkListEl').addEventListener('input',e=>{if(!e.target.classList.contains('rm'))return;const r=e.target.closest('.cp').dataset.r,a=A[r]=A[r]||{};a.r=e.target.value;if(!a.r&&a.v==null)delete A[r];persist()});
 function summary(){const S=$('kkV2');if(!cur){S.innerHTML='<div class="score-panel kk-e">Select a checklist first.</div>';return}const R=calc(),T=KK[cur],m=getMeta(),th=+(($('kkT')||{}).value)||70,gaps=items(cur).filter(i=>A[i.row]&&A[i.row].v!=null&&A[i.row].v<i.mx);
 const bar=p=>`<div class="bar"><i style="width:${Math.min(p,100)}%"></i></div>`,ths=T.themes.map(h=>({h,p:pct(R.th[h.id].a,R.th[h.id].m)})),ok=R.pct>=th&&ths.every(x=>x.p>=th),W=Object.values(R.w),wa=W.reduce((s,w)=>s+w.a,0),wm=W.reduce((s,w)=>s+w.m,0);
-S.innerHTML=`<div class="score-panel"><div class="section-title">General details</div><div class="fg"><div><label>Facility</label><input value="${esc(m.facility_name)}" readonly></div><div><label>Checklist</label><input value="${esc(T.label)}" readonly></div><div><label>District / Block</label><input value="${esc(m.district+(m.block?' / '+m.block:''))}" readonly></div><div><label>Assessment</label><input value="${esc((m.atype||'')+(m.start?' · '+m.start:'')+(m.end?' → '+m.end:''))}" readonly></div><div style="grid-column:1/-1"><label>Remarks / Doubts</label><textarea id="kkR" rows="2">${esc(m.remarks)}</textarea></div></div></div>
+S.innerHTML=`<div class="score-panel"><div class="section-title">General details</div><div class="fg"><div><label>Facility</label><input value="${esc(m.facility_name)}" readonly></div><div><label>Checklist</label><input value="${esc(T.label)}" readonly></div><div><label>District / Block</label><input value="${esc(m.district+(m.block?' / '+m.block:''))}" readonly></div><div><label>Assessment</label><input value="${esc((m.atype||'')+(m.start?' · '+m.start:'')+(m.end?' → '+m.end:''))}" readonly></div><div><label>Assessor 1</label><input value="${esc(m.a1||'')}" readonly></div><div><label>Assessor 1 designation</label><input value="${esc(m.d1||'')}" readonly></div><div><label>Assessor 2</label><input value="${esc(m.a2||'')}" readonly></div><div><label>Assessor 2 designation</label><input value="${esc(m.d2||'')}" readonly></div><div style="grid-column:1/-1"><label>Remarks / Doubts</label><textarea id="kkR" rows="2">${esc(m.remarks)}</textarea></div></div></div>
 <div class="score-panel"><div class="section-title">Kayakalp Score Card</div><div class="kk-big ${cls(R.pct)}">${R.pct}%</div><div class="kk-n">${R.ach} / ${R.max} · ${R.ans}/${R.n} answered${R.ans<R.n?' — <b class="mid">incomplete; unanswered checkpoints count as 0</b>':''}</div>
 <h3>Thematic scores</h3><table><tr><th>Theme</th><th>Marks</th><th>Score</th><th></th></tr>${ths.map(({h,p})=>`<tr><td>${h.id}. ${esc(h.name)}</td><td>${R.th[h.id].a} / ${R.th[h.id].m}</td><td class="${cls(p)}"><b>${p}%</b></td><td>${bar(p)}</td></tr>`).join('')}</table>
 ${R.eco!=null?`<p class="kk-n">Eco-Friendly scorecard (workbook formula: (H + A9 + C) / 200): <b class="${cls(R.eco)}">${R.eco}%</b></p>`:''}
@@ -2833,7 +2850,7 @@ window.addEventListener('qatcontent',function(){try{if(cur)render()}catch(e){}})
 /* controls */
 /* Kayakalp tabs: same bar, position and look as the NQAS tabs (.page-nav / .page-tab), shown only in Kayakalp mode */
 {const nv=document.createElement('div');nv.className='page-nav';nv.id='kkNav';nv.style.display='none';
-[['kkV1','Checklist'],['kkV2','Score Card'],['kkV3','Upload Repository']].forEach(([v,x],i)=>{const b=document.createElement('button');b.type='button';b.className='page-tab kk-t'+(i?'':' active');b.dataset.v=v;b.textContent=x;nv.appendChild(b)});
+[['kkV1','Checklist'],['kkV2','Score Card'],['kkV3','Kayakalp Upload Repository']].forEach(([v,x],i)=>{const b=document.createElement('button');b.type='button';b.className='page-tab kk-t'+(i?'':' active');b.dataset.v=v;b.textContent=x;nv.appendChild(b)});
 const nq=document.querySelector('.page-nav');nq.parentNode.insertBefore(nv,nq.nextSibling);}
 document.querySelectorAll('#kkNav .page-tab').forEach(b=>b.onclick=()=>{document.querySelectorAll('#kkNav .page-tab').forEach(x=>x.classList.remove('active'));document.querySelectorAll('#kayakalpPage .kk-v').forEach(x=>x.classList.remove('on'));b.classList.add('active');$(b.dataset.v).classList.add('on');if(b.dataset.v==='kkV2')summary()});
 $('kkType').onchange=function(){persist();cur=this.value;key='';A={};if(cur)loadKey(mk(),false);render();persist();touch()};
@@ -2889,20 +2906,26 @@ $('kkRepoFile').onchange=function(){const f=this.files[0];this.value='';if(f)kkR
 const sess=()=>sget('nqas_cloud_session');
 async function api(action,p){const s=sess();if(!s||!s.token)throw new Error('nosession');const r=await fetch(API,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(Object.assign({action,token:s.token},p))}),j=await r.json();if(j.error==='auth'){dispatchEvent(new Event('qatauth'));throw new Error('auth')}return j}
 const st=t=>$('kkSt').textContent=t;
+window.qatToast=function(msg,kind){let e=document.getElementById('qatToast');if(!e){e=document.createElement('div');e.id='qatToast';e.setAttribute('role','status');e.setAttribute('aria-live','polite');document.body.appendChild(e)}e.className=kind||'';e.textContent=msg;e.style.display='block';clearTimeout(window.qatToastT);window.qatToastT=setTimeout(()=>{e.style.display='none'},msg==='Saving…'?15000:3500)};
 const ident=()=>{const s=sess(),n=fName(),d=s?(s.role==='admin'?dName():s.district):'';return s&&cur&&n&&d?{district:d,facility_type:'KK_'+cur,facility_name:n}:null};
 function sched(ms){if(applying||!sess())return;clearTimeout(tm);tm=setTimeout(push,ms==null?2000:ms)}
-async function push(){const id=ident();if(!id){st(sess()?'○ Select facility to sync':'Offline mode – sign in to sync');return}if(busy){sched(1500);return}busy=true;st('↻ Syncing…');try{const j=await api('push',Object.assign({},id,{data:{answers:A,meta:getMeta()}}));st(j.ok?'● Synced':'⚠ Offline – will retry');if(!j.ok)sched(20000)}catch(e){st(e.message==='auth'?'Session expired – tap ☁ to sign in':'⚠ Offline – will retry');if(e.message!=='auth')sched(20000)}busy=false}
+async function push(){const id=ident();if(!id){st(sess()?'○ Select facility to sync':'Offline mode – sign in to sync');return false}if(busy){sched(1500);return false}busy=true;let ok=false;st('↻ Syncing…');try{const j=await api('push',Object.assign({},id,{data:{answers:A,meta:getMeta()}}));ok=!!j.ok;st(j.ok?'● Synced':'⚠ Offline – will retry');if(!j.ok)sched(20000)}catch(e){st(e.message==='auth'?'Session expired – tap ☁ to sign in':'⚠ Offline – will retry');if(e.message!=='auth')sched(20000)}busy=false;return ok}
 async function touch(){const id=ident();if(!id){st(sess()?'○ Select facility to sync':'Offline mode – sign in to sync');return}st('↻ Syncing…');let j;try{j=await api('pull',id)}catch(e){st('⚠ Offline');return}if(!j.ok){st('⚠ Offline');return}const has=Object.keys(A).length>0;if(!j.found){has?sched(300):st('● Synced');return}
 if(JSON.stringify(j.data.answers||{})===JSON.stringify(A)){st('● Synced');return}if(!has||confirm('A cloud copy exists (saved '+new Date(j.updated_at).toLocaleString()+' by '+(j.updated_by||'someone')+').\n\nOK = load the cloud copy (replaces this device\'s copy)\nCancel = keep this device\'s copy and upload it')){applying=true;try{A=j.data.answers||{};const m=j.data.meta||{};for(const i in MF)if(m[MF[i]]!=null)$(i).value=m[MF[i]];$('metaAssessmentType').dispatchEvent(new Event('change',{bubbles:true}));for(const i in MF)if(m[MF[i]]!=null)$(i).value=m[MF[i]];sset(key,{a:A,m:getMeta()});render()}finally{applying=false}st('● Synced')}else sched(300)}
 $('kkList').onclick=async()=>{const P=$('kkSaved');P.innerHTML='<p class="kk-n">Loading…</p>';let j;try{j=await api('list',{})}catch(e){P.innerHTML='<p class="bad">'+(e.message==='nosession'?'Sign in with your district login to see saved assessments (reload the page for the login prompt).':'Could not load (offline or session expired).')+'</p>';return}
 const rs=(j.rows||[]).filter(r=>/^KK_/.test(r.facility_type)),adm=(sess()||{}).role==='admin';P.innerHTML=rs.length?`<table><tr><th>Facility</th><th>Checklist</th><th>Last saved</th><th></th></tr>${rs.map((r,i)=>`<tr><td>${adm?esc(r.district)+' · ':''}${esc(r.facility_name)}</td><td>${esc((KK[r.facility_type.slice(3)]||{}).label||r.facility_type)}</td><td>${new Date(r.updated_at).toLocaleString()}</td><td><button class="kk-b p" data-i="${i}">Open</button></td></tr>`).join('')}</table>`:'<p class="kk-n">No Kayakalp assessments saved yet.</p>';
 P.querySelectorAll('button[data-i]').forEach(b=>b.onclick=()=>{const r=rs[b.dataset.i];persist();P.innerHTML='';if(adm){const d=$('metaDistrictSel'),o=[...d.options].find(o=>o.text.toLowerCase()===r.district.toLowerCase());if(o){d.value=o.value;d.dispatchEvent(new Event('change',{bubbles:true}))}}
 cur=r.facility_type.slice(3);$('kkType').value=cur;const o=[...$('metaFacilityList').options].find(o=>o.value.toLowerCase().indexOf(r.facility_name.toLowerCase()+' (')===0);$('metaFacilitySel').value=o?o.value:r.facility_name;$('metaFacilitySel').dispatchEvent(new Event('input'));key='';A={};loadKey(mk(),false);render();touch()})};
+$('kkSave').onclick=async()=>{if(!cur){qatToast('Select a Kayakalp checklist first','warn');return}persist();
+if(!sess()){qatToast('Saved on this device. Sign in to also save to the cloud.','warn');return}
+if(!ident()){qatToast('Saved on this device. Select the facility to save to the cloud.','warn');return}
+clearTimeout(tm);qatToast('Saving…');const ok=await push();
+if(ok)qatToast('✔ Saved to cloud','ok');else qatToast(window.qatNeedAuth&&window.qatNeedAuth()?'Saved on this device. Session expired – tap ☁ to sign in.':'Saved on this device. Cloud save failed – will retry.','warn')};
 addEventListener('online',()=>sched(500));addEventListener('pagehide',()=>{if(ident()){clearTimeout(tm);push()}});
 /* component switcher: NQAS | Kayakalp */
 const nav=document.querySelector('.page-nav'),pg=$('kayakalpPage'),tabs=[...document.querySelectorAll('.page-tab:not(.kk-t)')];let lastPage='assessmentPage';
 tabs.forEach(b=>b.addEventListener('click',()=>{lastPage=b.dataset.page}));
-const hide=['btnReset','btnDownloadBlank','btnExport','btnPrint'].map(i=>$(i)).concat([...document.querySelectorAll('.facility-select-row,#facilityTabs,.topbar-inner>p'),nav]).filter(Boolean),orig=new Map(hide.map(e=>[e,e.style.cssText]));
+const hide=['btnReset','btnDownloadBlank','btnExport','btnPrint'].map(i=>$(i)).concat([...document.querySelectorAll('.facility-select-row,#facilityTabs,.topbar-inner>p,#nqasActions'),nav]).filter(Boolean),orig=new Map(hide.map(e=>[e,e.style.cssText]));
 function setComp(c){const kk=c==='kk';$('compNQAS').classList.toggle('on',!kk);$('compKK').classList.toggle('on',kk);sset('qat_component',c);
 hide.forEach(e=>e.style.cssText=kk?'display:none !important':orig.get(e));
 const kn=$('kkNav');if(kn){kn.style.display=kk?'':'none';kn.querySelectorAll('.page-tab').forEach(x=>x.classList.toggle('active',$(x.dataset.v).classList.contains('on')))}
@@ -2958,7 +2981,7 @@ const tb=document.querySelector('.topbar .toolbar');
 /* status controls (☁ facility chip · Online · Sign out) live in the fixed top-right slot (#qatStR), outside .toolbar, so they stay put for NQAS and Kayakalp; the language toggle takes the top-left slot (#qatStL) */
 const sbar=document.getElementById('qatStR')||tb;
 function mkBtn(t,fn,host){const b=document.createElement('button');b.className='btn';b.textContent=t;b.onclick=fn;b.style.display='none';(host||tb).appendChild(b);return b;}
-const chip=mkBtn('☁',()=>needAuth?showLogin('Session expired – sign in to resume cloud sync.'):push(),sbar), listBtn=mkBtn('Saved assessments',openList), outBtn=mkBtn('⏻ Sign out',signOut,sbar);
+const chip=mkBtn('☁',()=>needAuth?showLogin('Session expired – sign in to resume cloud sync.'):push(),sbar), listBtn=mkBtn('Saved assessments',openList,document.querySelector('#nqasActions .kk-row')||tb), outBtn=mkBtn('⏻ Sign out',signOut,sbar);
 outBtn.title='Sign out';outBtn.setAttribute('aria-label','Sign out');outBtn.style.cssText+=';font-size:13px;font-weight:700;padding:6px 11px';
 const netB=document.createElement('span');netB.id='qatNet';netB.setAttribute('role','status');netB.style.cssText='display:inline-flex;align-items:center;gap:7px;font:700 13px Calibri,Arial,sans-serif;padding:6px 12px;border-radius:999px;border:1px solid #ffffff33;white-space:nowrap';
 const grp=document.createElement('span');grp.style.cssText='display:inline-flex;gap:6px;align-items:center';grp.append(netB,outBtn);sbar.appendChild(grp);
@@ -3042,12 +3065,23 @@ function snapshot(){return {answers:answers[currentFacility]||{},pss:($('certPSS
 
 /* ---------- push / pull ---------- */
 async function push(){
-  if(!profile)return; const id=ident(); if(!id){setStatus('idle');return;}
-  if(pushing){schedule(1500);return;} pushing=true; setStatus('syncing');
-  try{const j=await api('push',Object.assign({},id,{data:snapshot()})); setStatus(j.ok?'synced':'offline'); if(!j.ok)schedule(20000);}
+  if(!profile)return false; const id=ident(); if(!id){setStatus('idle');return false;}
+  if(pushing){schedule(1500);return false;} pushing=true; setStatus('syncing'); let ok=false;
+  try{const j=await api('push',Object.assign({},id,{data:snapshot()})); ok=!!j.ok; setStatus(j.ok?'synced':'offline'); if(!j.ok)schedule(20000);}
   catch(e){ if(e.message!=='auth'){setStatus('offline');schedule(20000);} }
-  pushing=false;
+  pushing=false; return ok;
 }
+/* explicit Save button: write to this device now, then upload right away */
+window.qatNeedAuth=()=>needAuth;
+async function saveNow(){
+  if(!currentFacility){qatToast('Select a facility type first','warn');return;}
+  try{saveAnswers(currentFacility);}catch(e){} try{if($('certPSS'))savePSS(currentFacility);}catch(e){}
+  if(!profile){qatToast('Saved on this device. Sign in to also save to the cloud.','warn');return;}
+  if(!ident()){qatToast('Saved on this device. Select the facility to save to the cloud.','warn');return;}
+  clearTimeout(timer); qatToast('Saving…'); const ok=await push();
+  if(ok)qatToast('✔ Saved to cloud','ok'); else qatToast(needAuth?'Saved on this device. Session expired – tap ☁ to sign in.':'Saved on this device. Cloud save failed – will retry.','warn');
+}
+{const sb=$('btnSave'); if(sb) sb.onclick=saveNow;}
 async function pull(id){
   setStatus('syncing'); let j;
   try{j=await api('pull',id);}catch(e){ if(e.message!=='auth')setStatus('offline'); return; }
@@ -3063,8 +3097,8 @@ function apply(d){
     answers[currentFacility]=d.answers||{}; saveAnswers(currentFacility);
     const p=$('certPSS'); if(p){p.value=d.pss||''; savePSS(currentFacility);}
     const m=d.meta||{}, set=(i,v)=>{const e=$(i); if(e&&v)e.value=v;};
-    const map={metaBlock:m.block,metaAssessmentType:m.assessment_type,metaAssessor1:m.assessor_1,metaAssessor2:m.assessor_2,metaStartDate:m.start_date,metaEndDate:m.end_date,
-      gdFacilityName:m.facility_name,gdBlock:m.block,gdAssessmentType:m.assessment_type,gdAssessor1:m.assessor_1,gdAssessor2:m.assessor_2,gdStartDate:m.start_date,gdEndDate:m.end_date};
+    const map={metaBlock:m.block,metaAssessmentType:m.assessment_type,metaAssessor1:m.assessor_1,metaAssessor2:m.assessor_2,metaDesig1:m.designation_1,metaDesig2:m.designation_2,metaStartDate:m.start_date,metaEndDate:m.end_date,
+      gdFacilityName:m.facility_name,gdBlock:m.block,gdAssessmentType:m.assessment_type,gdAssessor1:m.assessor_1,gdAssessor2:m.assessor_2,gdDesig1:m.designation_1,gdDesig2:m.designation_2,gdStartDate:m.start_date,gdEndDate:m.end_date};
     if(profile.role==='admin'){map.metaDistrict=m.district;map.gdDistrict=m.district;}
     Object.entries(map).forEach(([i,v])=>set(i,v));
     if($('gdRemarks'))$('gdRemarks').value=d.remarks||'';
