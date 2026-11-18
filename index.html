@@ -692,6 +692,22 @@ button,select,input,textarea{touch-action:manipulation}input,select,textarea{fon
     #qatNet{width:auto !important;}
   }
 </style>
+<style id="mobile-actions-dmy">
+  @media (max-width:700px){
+    #nqasActions .kk-row,#kayakalpPage .kk-row:has(#kkSave){display:grid !important;grid-template-columns:1fr 1fr;gap:8px;align-items:stretch;}
+    #nqasActions .kk-row>.btn,#kayakalpPage .kk-row:has(#kkSave)>.kk-b{width:100%;min-width:0;min-height:46px;padding:8px 6px;text-align:center;white-space:normal;line-height:1.2;font-size:13.5px;display:flex;align-items:center;justify-content:center;}
+    #nqasActions #btnPrint,#nqasActions #btnPrint ~ .btn,#nqasActions .kk-row>.btn:last-of-type,#kayakalpPage #kkUp,#kayakalpPage #kkList,#kayakalpPage #kkType,#kayakalpPage #kkSt{grid-column:1 / -1;}
+    #kayakalpPage #kkType{width:100%;min-width:0 !important;min-height:44px;}
+    #kayakalpPage #kkSt{text-align:left;}
+  }
+  .dmy-wrap{position:relative;display:block;flex:1 1 160px;min-width:120px;}
+  .dmy-wrap>input{width:100% !important;box-sizing:border-box;}
+  .dmy-ov{display:none;position:absolute;pointer-events:none;top:0;bottom:0;align-items:center;white-space:nowrap;overflow:hidden;}
+  @media (max-width:700px),(pointer:coarse){
+    .dmy-wrap>.dmy-ov{display:flex;}
+    .dmy-wrap>input.dmy-on{color:transparent !important;-webkit-text-fill-color:transparent !important;}
+  }
+</style>
 </head>
 <body>
 <div class="topbar">
@@ -3266,6 +3282,31 @@ if('serviceWorker' in navigator&&/^https?:$/.test(location.protocol)){
   else if(r.waiting&&navigator.serviceWorker.controller){state='ready';show('ready')}
   check();setInterval(check,30*60*1000);
   document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible')check()})})})}
+})();
+</script>
+<script id="dmy-dates">
+(function(){
+  function fmt(v){var m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(v||'');return m?m[3]+'-'+m[2]+'-'+m[1]:'';}
+  function setup(inp){
+    if(inp.dataset.dmy)return;inp.dataset.dmy='1';
+    var cs=getComputedStyle(inp);
+    var w=document.createElement('span');w.className='dmy-wrap';
+    inp.parentNode.insertBefore(w,inp);w.appendChild(inp);
+    var ov=document.createElement('span');ov.className='dmy-ov no-i18n';ov.setAttribute('aria-hidden','true');
+    ov.style.left=(parseFloat(cs.paddingLeft)||8)+(parseFloat(cs.borderLeftWidth)||0)+'px';
+    ov.style.fontSize=cs.fontSize;ov.style.fontFamily=cs.fontFamily;ov.style.fontWeight=cs.fontWeight;
+    ov.style.color=cs.color;
+    w.appendChild(ov);inp.classList.add('dmy-on');
+    var last=null;
+    function sync(){
+      var v=inp.value;if(v===last)return;last=v;
+      var f=fmt(v);ov.textContent=f||'dd-mm-yyyy';ov.style.opacity=f?'1':'.55';
+    }
+    ['input','change','blur'].forEach(function(e){inp.addEventListener(e,sync);});
+    sync();setInterval(sync,400);
+  }
+  function init(){['metaStartDate','metaEndDate','gdStartDate','gdEndDate'].forEach(function(id){var e=document.getElementById(id);if(e)setup(e);});}
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();
 </script>
 </body>
