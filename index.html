@@ -679,6 +679,7 @@ button,select,input,textarea{touch-action:manipulation}input,select,textarea{fon
   .assess-type-row select{display:block !important;width:100% !important;max-width:420px !important;min-height:42px;padding:9px 10px !important;border-radius:8px !important;border:2px solid #ff8a1f !important;background:#25123a !important;color:#fff !important;font-family:var(--sans);font-size:15px !important;font-weight:700;visibility:visible !important;opacity:1 !important;}
   .assess-type-row select option{background:#25123a;color:#fff;}
   .qat-fac-name{color:#ff8a1f !important;font-weight:800;}
+  .qat-st-r>span button{display:inline-flex;align-items:center;justify-content:center;}
   @media(max-width:700px){
     .qat-status{align-items:flex-start;}
     .qat-st-r{flex-direction:column;align-items:flex-end;gap:6px;flex-wrap:nowrap;max-width:68%;}
@@ -687,7 +688,7 @@ button,select,input,textarea{touch-action:manipulation}input,select,textarea{fon
     .qat-st-r>.btn .qat-cloud{display:none;}
     .qat-st-r>.btn .qat-fac-st{display:block;font-size:11px;opacity:.85;font-weight:600;}
     .qat-st-r .qat-so-t{display:none;}
-    .qat-st-r>span button{min-width:36px;width:36px;height:36px;padding:0 !important;display:inline-flex;align-items:center;justify-content:center;border-radius:50%;}
+    .qat-st-r>span button{color:#fff !important;background:#4b1f68 !important;border:1px solid #ffffff66 !important;min-width:36px;width:36px;height:36px;padding:0 !important;display:inline-flex;align-items:center;justify-content:center;border-radius:50%;}
     #qatNet{width:auto !important;}
   }
 </style>
@@ -3003,7 +3004,7 @@ const tb=document.querySelector('.topbar .toolbar');
 const sbar=document.getElementById('qatStR')||tb;
 function mkBtn(t,fn,host){const b=document.createElement('button');b.className='btn';b.textContent=t;b.onclick=fn;b.style.display='none';(host||tb).appendChild(b);return b;}
 const chip=mkBtn('☁',()=>needAuth?showLogin('Session expired – sign in to resume cloud sync.'):push(),sbar), listBtn=mkBtn('Saved assessments',openList,document.querySelector('#nqasActions .kk-row')||tb), outBtn=mkBtn('⏻ Sign out',signOut,sbar);
-outBtn.innerHTML='<span aria-hidden="true">⏻</span><span class="qat-so-t"> Sign out</span>';outBtn.title='Sign out';outBtn.setAttribute('aria-label','Sign out');outBtn.style.cssText+=';font-size:13px;font-weight:700;padding:6px 11px';
+outBtn.innerHTML='<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none;display:block"><path d="M12 2v9"/><path d="M18.4 6.6a9 9 0 1 1-12.8 0"/></svg><span class="qat-so-t" style="margin-left:6px">Sign out</span>';outBtn.style.display='none';outBtn.title='Sign out';outBtn.setAttribute('aria-label','Sign out');outBtn.style.cssText+=';font-size:13px;font-weight:700;padding:6px 11px';
 const netB=document.createElement('span');netB.id='qatNet';netB.setAttribute('role','status');netB.style.cssText='display:inline-flex;align-items:center;justify-content:center;min-width:36px;height:36px;padding:0 12px;border-radius:18px;border:1px solid #ffffff33;flex:none;font:700 13px Calibri,Arial,sans-serif;white-space:nowrap';
 const grp=document.createElement('span');grp.style.cssText='display:inline-flex;gap:6px;align-items:center';grp.append(netB,outBtn);sbar.appendChild(grp);
 function netDot(off){return off?'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="1" y1="1" x2="23" y2="23"/><path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55"/><path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39"/><path d="M10.71 5.05A16 16 0 0 1 22.58 9"/><path d="M1.42 9a15.91 15.91 0 0 1 4.7-2.88"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>':'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>';}
