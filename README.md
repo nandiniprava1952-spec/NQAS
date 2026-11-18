@@ -35,6 +35,24 @@ The login screen has District, an optional Block (blank = district login), an op
 ## Kayakalp Upload Repository
 Kayakalp → **Upload Repository** works like the NQAS one: **Use This Template** selects a checklist and makes it the active workbook for Download Blank / Filled; **Upload XLSX from Computer** accepts your own Kayakalp workbook (layout is auto-detected, and you can optionally import its scores); **Clear Selected Template** resets; **Download All Blank Checklists (ZIP)** bundles all four blank Kayakalp workbooks.
 
+## Bilingual (English / ଓଡ଼ିଆ)
+A language switch (English | ଓଡ଼ିଆ) sits under the NQAS / Kayakalp buttons, on the cover and on the login screen. The choice is remembered on the device (`qat_lang`).
+
+- **App text** (buttons, tabs, labels, score cards, messages, update banner, dialogs): `i18n.js`. English is the source; Odia is applied on top, so nothing breaks if a phrase is missing. District / block / facility names and values the app reads back are never changed.
+- **Official checklist wording** (NQAS departments, standards, MEs, checkpoints, MOV; Kayakalp themes, categories, checkpoints): the English is **never replaced**. In Odia mode the Odia is shown *under* the English line, from `data/or-checklist.json`. Anything without an approved Odia line simply shows English.
+- **Exports** (XLSX / ZIP) stay in the official English workbooks.
+- Currently translated for checklist content: department names, Kayakalp themes and categories (170 lines, first draft – have them reviewed). Standards, MEs, checkpoints and MOV (~16,400 lines) are still English.
+
+### Adding / approving Odia checklist text
+```
+pip install openpyxl                      # (and `anthropic` only if you want machine drafts)
+python tools/or_checklist.py export       # -> tools/translation-sheet.xlsx  (every unique English line, 16,596)
+# optional: ANTHROPIC_API_KEY=... python tools/or_checklist.py draft --limit 500   (fills the "Draft Odia" column; drafts are never shipped)
+# translators/reviewers fill "Odia (final)" and set Status = Approved
+python tools/or_checklist.py build        # -> data/or-checklist.json  (only Approved / seed rows)
+```
+Then bump `VERSION` in `sw.js` and push. Re-running `export` keeps earlier work in the sheet.
+
 ## Notes
 - Sign-in persists on the device until you tap the ⏻ sign-out button. If the server rejects the saved token, the app stays open and the ☁ chip shows "Session expired – tap to sign in"; local data is kept.
 - The Online (green dot) / Offline (yellow) indicator is automatic: it follows the browser's connection status plus a small check against the host every 15 s.

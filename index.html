@@ -232,6 +232,7 @@ button,select,input,textarea{touch-action:manipulation}input,select,textarea{fon
 <script src="vendor/jszip.min.js"></script>
 <script src="vendor/jspdf.umd.min.js"></script>
 <script src="vendor/jspdf.plugin.autotable.min.js"></script>
+<script src="i18n.js"></script>
 
 <style id="dark-purple-theme">
   :root{
@@ -1016,10 +1017,10 @@ function renderCheckpoint(cp){
   const method = cp.method || "Not specified in checklist";
   const remark = cp.remark || "";
   return `<div class="cp" data-cpid="${cp.id}">
-    <div class="cp-label">${cp.label}<span class="cp-max">Max: ${cp.max}</span></div>
+    <div class="cp-label">${cp.label}${TC(cp.label)}<span class="cp-max">Max: ${cp.max}</span></div>
     <div class="cp-detail-grid">
       <div class="cp-detail"><strong>Assessment Method:</strong><span>${method}</span></div>
-      <div class="cp-detail"><strong>Means of Verification (MOV):</strong><span>${mov.length ? mov.join(" · ") : "Not specified in checklist"}</span></div>
+      <div class="cp-detail"><strong>Means of Verification (MOV):</strong><span>${mov.length ? mov.join(" · ") + mov.map(m=>TC(m)).join("") : "Not specified in checklist"}</span></div>
       <div class="cp-detail"><strong>Remarks:</strong><span>${remark || ""}</span></div>
     </div>
     <div class="cp-compliance-title"><strong>Compliance</strong></div>
@@ -1031,7 +1032,7 @@ function renderCheckpoint(cp){
 function renderME(me, stdAoc){
   const total = me.checkpoints.length;
   return `<details class="me">
-    <summary>${me.label} <span class="cp-max">(${total} checkpoint${total!==1?'s':''})</span></summary>
+    <summary>${me.label}${TC(me.label)} <span class="cp-max">(${total} checkpoint${total!==1?'s':''})</span></summary>
     <div class="me-body">${me.checkpoints.map(renderCheckpoint).join("")}</div>
   </details>`;
 }
@@ -1041,7 +1042,7 @@ function renderStandard(std){
   const sc = s.stdScores[std.id] || {ach:0,max:0};
   const p = pct(sc.ach, sc.max);
   return `<details class="std">
-    <summary><span><span class="std-code">${std.code||""}</span>${std.label}</span>
+    <summary><span><span class="std-code">${std.code||""}</span>${std.label}${TC(std.label)}</span>
       <span class="std-score">${sc.ach}/${sc.max} (${p}%)</span></summary>
     <div class="std-body">${std.mes.map(m=>renderME(m, std.aoc)).join("")}</div>
   </details>`;
@@ -1069,7 +1070,7 @@ function renderDept(dep){
   const dc = s.deptScores[dep.id] || {ach:0,max:0};
   const p = pct(dc.ach, dc.max);
   return `<details class="dept" data-deptid="${dep.id}">
-    <summary><span><span class="car">▶</span> ${dep.label}</span>
+    <summary><span><span class="car">▶</span> ${dep.label}${TC(dep.label)}</span>
       <span class="dept-badge">${dc.ach}/${dc.max} · ${p}%</span></summary>
     <div class="dept-body" data-lazy="1"></div>
   </details>`;
@@ -2714,6 +2715,7 @@ FACILITY_KEYS.forEach(loadAnswers);
 if(currentFacility) loadPSS(currentFacility);
 renderAll();
 populateDistrictSelect();
+window.addEventListener('qatcontent',function(){try{renderAll()}catch(e){}});
 
 </script>
 
@@ -2806,8 +2808,8 @@ function update(){if(!cur){$('kkTop').innerHTML='<div class="kk-e">Select a Kaya
 $('kkTop').innerHTML=`<div class="kk-big ${cls(R.pct)}">${R.pct}%</div><div class="kk-n">${R.ach} / ${R.max} marks · ${R.ans} of ${R.n} checkpoints answered · ${esc(T.ver)}</div><div class="kk-g">${T.themes.map(h=>{const t=R.th[h.id],p=pct(t.a,t.m);return `<div class="kk-c"><div class="l">${h.id}. ${esc(h.name.slice(0,22))}</div><div class="v ${cls(p)}">${p}%</div></div>`}).join('')}</div>`;
 T.themes.forEach(h=>{const t=R.th[h.id],e=$('kkts_'+h.id);if(e)e.textContent=`${t.a}/${t.m} · ${t.ans}/${t.n} done`;h.cats.forEach(c=>{const e=$('kkcs_'+c.id);if(e)e.textContent=`${R.cat[c.id].a}/${R.cat[c.id].m}`})});if($('kkV2').classList.contains('on'))summary()}
 function render(){try{refreshRepo()}catch(e){}const L=$('kkListEl');if(!cur){L.innerHTML='';update();return}
-const row=i=>{const a=A[i.row]||{};return `<div class="cp" data-r="${i.row}"><div class="cl"><span class="ref">${esc(i.ref)}</span>${esc(i.t)}${i.m.split('/').filter(Boolean).map(m=>`<span class="mb">${esc(m.trim())}</span>`).join('')}${i.w?`<span class="wb">WASH · ${esc(i.w)}</span>`:''}</div>${i.v?`<details class="mv"><summary>Means of verification</summary><div>${esc(i.v)}</div></details>`:''}<div class="sg">${[0,1,2].map(v=>`<button data-v="${v}" class="${a.v===v?'on v'+v:''}">${['0 · Non-compliant','1 · Partial','2 · Compliant'][v]}</button>`).join('')}<input class="rm" placeholder="Remarks" value="${esc(a.r||'')}"></div></div>`};
-L.innerHTML=KK[cur].themes.map(h=>`<details class="th"><summary><span><b>${h.id}.</b> ${esc(h.name)}</span><span class="bd" id="kkts_${h.id}"></span></summary>${h.cats.map(c=>`<div class="cat"><div class="cn"><span>${esc(c.id)} · ${esc(c.name)}</span><span class="bd" id="kkcs_${c.id}"></span></div>${c.items.map(row).join('')}</div>`).join('')}</details>`).join('');update()}
+const row=i=>{const a=A[i.row]||{};return `<div class="cp" data-r="${i.row}"><div class="cl"><span class="ref">${esc(i.ref)}</span>${esc(i.t)}${TC(i.t)}${i.m.split('/').filter(Boolean).map(m=>`<span class="mb">${esc(m.trim())}</span>`).join('')}${i.w?`<span class="wb">WASH · ${esc(i.w)}</span>`:''}</div>${i.v?`<details class="mv"><summary>Means of verification</summary><div>${esc(i.v)}${TC(i.v)}</div></details>`:''}<div class="sg">${[0,1,2].map(v=>`<button data-v="${v}" class="${a.v===v?'on v'+v:''}">${['0 · Non-compliant','1 · Partial','2 · Compliant'][v]}</button>`).join('')}<input class="rm" placeholder="Remarks" value="${esc(a.r||'')}"></div></div>`};
+L.innerHTML=KK[cur].themes.map(h=>`<details class="th"><summary><span><b>${h.id}.</b> ${esc(h.name)}${TC(h.name)}</span><span class="bd" id="kkts_${h.id}"></span></summary>${h.cats.map(c=>`<div class="cat"><div class="cn"><span>${esc(c.id)} · ${esc(c.name)}${TC(c.name)}</span><span class="bd" id="kkcs_${c.id}"></span></div>${c.items.map(row).join('')}</div>`).join('')}</details>`).join('');update()}
 $('kkListEl').addEventListener('click',e=>{const b=e.target.closest('button[data-v]');if(!b)return;const r=b.closest('.cp').dataset.r,v=+b.dataset.v,a=A[r]=A[r]||{};a.v=a.v===v?undefined:v;b.closest('.sg').querySelectorAll('button').forEach(x=>x.className=(+x.dataset.v===a.v)?'on v'+a.v:'');if(a.v==null&&!a.r)delete A[r];persist();update()});
 $('kkListEl').addEventListener('input',e=>{if(!e.target.classList.contains('rm'))return;const r=e.target.closest('.cp').dataset.r,a=A[r]=A[r]||{};a.r=e.target.value;if(!a.r&&a.v==null)delete A[r];persist()});
 function summary(){const S=$('kkV2');if(!cur){S.innerHTML='<div class="score-panel kk-e">Select a checklist first.</div>';return}const R=calc(),T=KK[cur],m=getMeta(),th=+(($('kkT')||{}).value)||70,gaps=items(cur).filter(i=>A[i.row]&&A[i.row].v!=null&&A[i.row].v<i.mx);
@@ -2821,6 +2823,7 @@ ${R.eco!=null?`<p class="kk-n">Eco-Friendly scorecard (workbook formula: (H + A9
 <div class="score-panel"><div class="section-title">Category-wise score</div><table><tr><th>Category</th><th>Marks</th><th>Score</th></tr>${T.themes.flatMap(h=>h.cats.map(c=>{const x=R.cat[c.id],p=pct(x.a,x.m);return `<tr><td>${esc(c.id)} · ${esc(c.name)}</td><td>${x.a} / ${x.m}</td><td class="${cls(p)}">${p}%</td></tr>`})).join('')}</table></div>
 <div class="score-panel"><div class="section-title">Gaps — checkpoints scored below maximum (${gaps.length})</div>${gaps.length?`<table><tr><th>Ref</th><th>Checkpoint</th><th>Score</th><th>Remarks</th></tr>${gaps.map(i=>`<tr><td>${esc(i.ref)}</td><td>${esc(i.t)}</td><td class="${A[i.row].v?'mid':'bad'}">${A[i.row].v}/${i.mx}</td><td>${esc(A[i.row].r||'')}</td></tr>`).join('')}</table>`:'<p class="kk-n">None recorded.</p>'}</div>`;
 $('kkT').onchange=summary;$('kkR').oninput=persist}
+window.addEventListener('qatcontent',function(){try{if(cur)render()}catch(e){}});
 /* controls */
 document.querySelectorAll('#kayakalpPage .kk-sub button').forEach(b=>b.onclick=()=>{document.querySelectorAll('#kayakalpPage .kk-sub button,#kayakalpPage .kk-v').forEach(x=>x.classList.remove('on'));b.classList.add('on');$(b.dataset.v).classList.add('on');if(b.dataset.v==='kkV2')summary()});
 $('kkType').onchange=function(){persist();cur=this.value;key='';A={};if(cur)loadKey(mk(),false);render();persist();touch()};
@@ -2989,19 +2992,18 @@ function showLogin(msg){
   bar.querySelectorAll('button').forEach(b=>b.style.cssText='border:0;background:transparent;color:#d8c8f0;font:600 13px Calibri,Arial,sans-serif;padding:8px 13px;cursor:pointer;min-height:36px');
   ov.appendChild(bar);
   const mark=(sel,key,val,col)=>bar.querySelectorAll(sel+' button').forEach(b=>{const on=b.dataset[key]===val;b.style.background=on?col:'transparent';b.style.color=on?(col==='#eab308'?'#1f1300':'#fff'):'#d8c8f0'});
-  const applyL=()=>{const o=LANG()==='or';ov.querySelectorAll('h2,p,label,option,button,#clM').forEach(e=>{if(e.closest('#lgBar'))return;
-      [...e.childNodes].filter(n=>n.nodeType===3&&n.nodeValue.trim()).forEach(n=>{if(!n.__en)n.__en=n.nodeValue;n.nodeValue=o?(OR[n.__en.trim()]||n.__en):n.__en})});
-    document.documentElement.lang=o?'or':'en';mark('#lgL','l',LANG(),'#7c3aaa')};
+  const applyL=()=>{mark('#lgL','l',LANG(),'#7c3aaa')};
   const applyN=()=>{const off=NET()==='offline';const ns=$('lgNs');ns.innerHTML=netDot(off);ns.style.background=off?'#fde047':'transparent';ns.style.color=off?'#1f1300':'#fff';
     ['clD','clBk','clFc','clP','clB'].forEach(i=>{const e=$(i);e.disabled=off;e.style.opacity=off?.45:1});
     $('clS').style.cssText+=off?';background:#7c3aaa;color:#fff;font-size:14px;padding:11px':';background:;color:;font-size:12px;padding:8px'};
-  bar.querySelectorAll('#lgL button').forEach(b=>b.onclick=()=>{try{localStorage.setItem('qat_lang',b.dataset.l)}catch(e){};applyL();applyN()});
+  bar.querySelectorAll('#lgL button').forEach(b=>b.onclick=()=>{try{QAT_I18N.set(b.dataset.l)}catch(e){try{localStorage.setItem('qat_lang',b.dataset.l)}catch(_){}};applyL();applyN()});
+  window.addEventListener('qatlang',()=>{applyL();applyN()});
   applyL();applyN();ready=true;
 }
 const OR={'Quality Assessment Toolkit':'ଗୁଣବତ୍ତା ମୂଲ୍ୟାଙ୍କନ ଟୁଲକିଟ୍','District / Block / Facility login':'ଜିଲ୍ଲା / ବ୍ଲକ୍ / ସ୍ୱାସ୍ଥ୍ୟ କେନ୍ଦ୍ର ଲଗଇନ୍','Facility (optional)':'ସ୍ୱାସ୍ଥ୍ୟ କେନ୍ଦ୍ର (ଇଚ୍ଛାଧୀନ)','Block login (all facilities)':'ବ୍ଲକ୍ ଲଗଇନ୍ (ସମସ୍ତ କେନ୍ଦ୍ର)','Block (optional)':'ବ୍ଲକ୍ (ଇଚ୍ଛାଧୀନ)','District login (all blocks)':'ଜିଲ୍ଲା ଲଗଇନ୍ (ସମସ୍ତ ବ୍ଲକ୍)','District':'ଜିଲ୍ଲା','Select district…':'ଜିଲ୍ଲା ବାଛନ୍ତୁ…','State Admin':'ରାଜ୍ୟ ଆଡମିନ୍','Password':'ପାସୱାର୍ଡ','Sign in':'ସାଇନ୍ ଇନ୍','Continue offline (no cloud sync)':'ଅଫଲାଇନ୍ ଜାରି ରଖନ୍ତୁ (କ୍ଲାଉଡ୍ ସିଙ୍କ୍ ନାହିଁ)','Choose district and enter password.':'ଜିଲ୍ଲା ବାଛନ୍ତୁ ଓ ପାସୱାର୍ଡ ଦିଅନ୍ତୁ।','Signing in…':'ସାଇନ୍ ଇନ୍ ହେଉଛି…','Cannot reach server. Check internet and the API URL.':'ସର୍ଭର୍ ସହ ସଂଯୋଗ ହେଉନାହିଁ। ଇଣ୍ଟରନେଟ୍ ଯାଞ୍ଚ କରନ୍ତୁ।'};
 function LANG(){try{return localStorage.getItem('qat_lang')||'en'}catch(e){return 'en'}}
 function NET(){try{return localStorage.getItem('qat_net')||(navigator.onLine?'online':'offline')}catch(e){return navigator.onLine?'online':'offline'}}
-function LT(s){return LANG()==='or'&&OR[s]||s}
+function LT(s){try{return LANG()==='or'?QAT_I18N.tr(s):s}catch(e){return s}}
 async function signOut(){ if(!confirm('Sign out? Unsynced changes stay on this device and upload next time you sign in.'))return;
   try{await push();await api('logout',{});}catch(e){} origRem.call(localStorage,'nqas_cloud_session'); location.reload(); }
 
