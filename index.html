@@ -2944,11 +2944,15 @@ addEventListener('qatauth',()=>{if(profile)expired();});
 
 /* ---------- UI ---------- */
 const tb=document.querySelector('.topbar .toolbar');
-function mkBtn(t,fn){const b=document.createElement('button');b.className='btn';b.textContent=t;b.onclick=fn;b.style.display='none';tb.appendChild(b);return b;}
-const chip=mkBtn('☁',()=>needAuth?showLogin('Session expired – sign in to resume cloud sync.'):push()), listBtn=mkBtn('Saved assessments',openList), outBtn=mkBtn('⏻ Sign out',signOut);
+/* status row (☁ facility chip · Online · Sign out) lives in its own bar under the title, outside .toolbar, so it sits in the same place for NQAS and Kayakalp (setComp hides toolbar buttons only) */
+const sbar=document.createElement('div');sbar.id='qatStatus';sbar.className='qat-status';
+{const br=document.querySelector('.topbar .brand-row');if(br)br.after(sbar);else tb.parentNode.appendChild(sbar);
+const sty=document.createElement('style');sty.textContent='.qat-status{display:flex;flex-wrap:wrap;align-items:center;gap:8px;width:100%;margin-top:10px}.qat-status>.btn{flex:0 1 auto;min-width:0;max-width:100%;margin-right:auto;text-align:left;white-space:normal}.qat-status>span{margin-left:auto}@media(max-width:700px){.qat-status .btn{min-height:40px}}@media print{.qat-status{display:none!important}}';document.head.appendChild(sty);}
+function mkBtn(t,fn,host){const b=document.createElement('button');b.className='btn';b.textContent=t;b.onclick=fn;b.style.display='none';(host||tb).appendChild(b);return b;}
+const chip=mkBtn('☁',()=>needAuth?showLogin('Session expired – sign in to resume cloud sync.'):push(),sbar), listBtn=mkBtn('Saved assessments',openList), outBtn=mkBtn('⏻ Sign out',signOut,sbar);
 outBtn.title='Sign out';outBtn.setAttribute('aria-label','Sign out');outBtn.style.cssText+=';font-size:13px;font-weight:700;padding:6px 11px';
 const netB=document.createElement('span');netB.id='qatNet';netB.setAttribute('role','status');netB.style.cssText='display:inline-flex;align-items:center;gap:7px;font:700 13px Calibri,Arial,sans-serif;padding:6px 12px;border-radius:999px;border:1px solid #ffffff33;white-space:nowrap';
-const grp=document.createElement('span');grp.style.cssText='display:inline-flex;gap:6px;align-items:center;margin-left:auto';grp.append(netB,outBtn);tb.appendChild(grp);
+const grp=document.createElement('span');grp.style.cssText='display:inline-flex;gap:6px;align-items:center;margin-left:auto';grp.append(netB,outBtn);sbar.appendChild(grp);
 function netDot(off){const o=LANG()==='or';return '<i style="width:10px;height:10px;border-radius:50%;flex:none;background:'+(off?'#a16207':'#22c55e')+';box-shadow:0 0 0 3px '+(off?'#a1620744':'#22c55e55')+'"></i>'+(off?(o?'ଅଫଲାଇନ୍':'Offline'):(o?'ଅନଲାଇନ୍':'Online'));}
 function paintNet(){const off=NET()==='offline';netB.innerHTML=netDot(off);netB.title=off?'No connection – changes are saved on this device and sync when back online':'Connected';netB.style.background=off?'#fde047':'#1d1030';netB.style.color=off?'#1f1300':'#fff'}
 addEventListener('qatnet',paintNet);setInterval(paintNet,2000);paintNet();
