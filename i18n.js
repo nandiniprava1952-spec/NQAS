@@ -90,6 +90,8 @@
     'General remarks': 'ସାଧାରଣ ମନ୍ତବ୍ୟ',
     'Enter PSS %': 'PSS % ଲେଖନ୍ତୁ',
     'Start date': 'ଆରମ୍ଭ ତାରିଖ',
+    'From': 'ଠାରୁ',
+    'To': 'ପର୍ଯ୍ୟନ୍ତ',
     'End date': 'ସମାପ୍ତି ତାରିଖ',
     'Please select a Facility Type to begin the assessment.': 'ମୂଲ୍ୟାଙ୍କନ ଆରମ୍ଭ କରିବାକୁ ଦୟାକରି କେନ୍ଦ୍ର ପ୍ରକାର ବାଛନ୍ତୁ।',
 

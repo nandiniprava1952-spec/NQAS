@@ -701,6 +701,9 @@ button,select,input,textarea{touch-action:manipulation}input,select,textarea{fon
     #kayakalpPage #kkSt{text-align:left;}
   }
   .dmy-wrap{position:relative;display:block;flex:1 1 160px;min-width:120px;}
+  .meta-date{flex:1 1 160px;min-width:120px;display:flex;flex-direction:column;gap:3px;}
+  .meta-date>label{font-size:11.5px;font-weight:600;color:#fdece0;line-height:1.2;}
+  .meta-date>.dmy-wrap{flex:none;width:100%;min-width:0;}
   .dmy-wrap>input{width:100% !important;box-sizing:border-box;}
   .dmy-ov{display:none;position:absolute;pointer-events:none;top:0;bottom:0;align-items:center;white-space:nowrap;overflow:hidden;}
   @media (max-width:700px),(pointer:coarse){
@@ -749,8 +752,8 @@ button,select,input,textarea{touch-action:manipulation}input,select,textarea{fon
       <input type="text" id="metaDesig1" placeholder="Assessor 1 designation">
       <input type="text" id="metaAssessor2" placeholder="Assessor 2 name">
       <input type="text" id="metaDesig2" placeholder="Assessor 2 designation">
-      <input type="date" id="metaStartDate" title="Start date">
-      <input type="date" id="metaEndDate" title="End date">
+      <div class="meta-date"><label for="metaStartDate">From</label><input type="date" id="metaStartDate" title="Start date"></div>
+      <div class="meta-date"><label for="metaEndDate">To</label><input type="date" id="metaEndDate" title="End date"></div>
       <input type="hidden" id="metaFacilityName">
       <input type="hidden" id="metaDistrict">
       <input type="hidden" id="metaBlock">
