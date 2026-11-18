@@ -27,6 +27,12 @@ The cover shows an illustrated hospital scene. To use your own photos instead, a
 ## Updating
 Replace `index.html` (or any file), then change `VERSION` in `sw.js` (e.g. `v2`) and push. Users get an "Update" prompt.
 
+## Logins (district + block + facility)
+The login screen has District, an optional Block (blank = district login), an optional Facility (blank = block login) and Password. Block and facility users are locked to their block / facility. Block users are locked to their district and block. Passcodes and the server live in the Google Sheet behind `Code.gs`: import `passcodes_sheet.csv` (district, block and facility passcodes) into a tab named `Passcodes`, then deploy `Code.gs` as a web app (see its header).
+
+## Kayakalp Upload Repository
+Kayakalp → **Upload Repository** works like the NQAS one: **Use This Template** selects a checklist and makes it the active workbook for Download Blank / Filled; **Upload XLSX from Computer** accepts your own Kayakalp workbook (layout is auto-detected, and you can optionally import its scores); **Clear Selected Template** resets; **Download All Blank Checklists (ZIP)** bundles all four blank Kayakalp workbooks.
+
 ## Notes
 - Sign-in persists on the device until you tap the ⏻ sign-out button. If the server rejects the saved token, the app stays open and the ☁ chip shows "Session expired – tap to sign in"; local data is kept.
 - The Online (green dot) / Offline (yellow) indicator is automatic: it follows the browser's connection status plus a small check against the host every 15 s.

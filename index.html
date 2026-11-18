@@ -668,6 +668,9 @@ button,select,input,textarea{touch-action:manipulation}input,select,textarea{fon
       <select id="metaAssessmentType">
         <option value="">Assessment type…</option>
         <option value="Self">Self</option>
+        <option value="Internal Assessment 1">Internal Assessment 1</option>
+        <option value="Internal Assessment 2">Internal Assessment 2</option>
+        <option value="Internal Assessment 3">Internal Assessment 3</option>
         <option value="Peer">Peer</option>
         <option value="District">District</option>
         <option value="State">State</option>
@@ -705,7 +708,7 @@ button,select,input,textarea{touch-action:manipulation}input,select,textarea{fon
         <div class="field-card"><label>Facility Type</label><input id="gdFacilityType" type="text" readonly></div>
         <div class="field-card"><label>District</label><input id="gdDistrict" type="text" placeholder="District"></div>
         <div class="field-card"><label>Block / Urban Area</label><input id="gdBlock" type="text" placeholder="Block / Urban Area"></div>
-        <div class="field-card"><label>Assessment Type</label><select id="gdAssessmentType"><option value="">Select</option><option>Self</option><option>Peer</option><option>District</option><option>State</option></select></div>
+        <div class="field-card"><label>Assessment Type</label><select id="gdAssessmentType"><option value="">Select</option><option>Self</option><option>Internal Assessment 1</option><option>Internal Assessment 2</option><option>Internal Assessment 3</option><option>Peer</option><option>District</option><option>State</option></select></div>
         <div class="field-card"><label>Assessment Start Date</label><input id="gdStartDate" type="date"></div>
         <div class="field-card"><label>Assessment End Date</label><input id="gdEndDate" type="date"></div>
         <div class="field-card"><label>Assessor 1</label><input id="gdAssessor1" type="text"></div>
@@ -792,10 +795,10 @@ button,select,input,textarea{touch-action:manipulation}input,select,textarea{fon
 <div class="kk-row"><select id="kkType" style="min-width:270px;font-weight:700"><option value="">Select Kayakalp checklist…</option></select>
 <button class="kk-b" id="kkReset">Reset answers</button><button class="kk-b" id="kkBlank">Download Blank</button><button class="kk-b" id="kkFill">Download Filled</button><button class="kk-b p" id="kkUp">Upload filled XLSX</button><input type="file" id="kkFile" accept=".xlsx" hidden><button class="kk-b" id="kkList">Saved Kayakalp assessments</button><span class="kk-n" id="kkSt"></span></div>
 <div id="kkSaved"></div></div>
-<div class="kk-sub"><button class="on" data-v="kkV1">Checklist</button><button data-v="kkV2">Score Card</button><button data-v="kkV3">Template Repository</button></div>
+<div class="kk-sub"><button class="on" data-v="kkV1">Checklist</button><button data-v="kkV2">Score Card</button><button data-v="kkV3">Upload Repository</button></div>
 <div id="kkV1" class="kk-v on"><div class="score-panel" id="kkTop"></div><div id="kkListEl"></div></div>
 <div id="kkV2" class="kk-v"></div>
-<div id="kkV3" class="kk-v"><div class="score-panel"><div class="section-title">Original Kayakalp workbooks (blank)</div><div class="kk-row" id="kkRepo"></div></div></div>
+<div id="kkV3" class="kk-v"><div class="score-panel"><div class="section-title">Kayakalp Upload Repository</div><p style="margin:0 0 14px;color:#76543b;font-size:13px;line-height:1.5">Select a checklist workbook to make it the active template for <strong>Download Blank</strong> and <strong>Download Filled</strong>, or upload your own Kayakalp workbook from your computer. Uploaded workbooks keep their original layout and are matched automatically to the right checklist.</p><div id="kkRepoGrid" class="repository-grid"></div><div id="kkRepoStatus" class="repo-status">No repository template selected yet.</div><div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap"><button class="btn" id="kkRepoUpload">Upload XLSX from Computer</button><input type="file" id="kkRepoFile" accept=".xlsx" hidden><button class="btn" id="kkRepoClear">Clear Selected Template</button><button class="btn primary" id="kkRepoZip">Download All Blank Checklists (ZIP)</button></div></div></div>
 </div></div>
 
 <footer>Built from NQAS XLSForm checklist data (UPHC, CHC, PHC, AAM-SHC). Scores are indicative — refer to the official NQAS assessor toolkit for authoritative scoring.</footer>
@@ -2709,7 +2712,7 @@ populateDistrictSelect();
       if (!target) return;
 
       var text = (target.textContent || '').trim().replace(/\s+/g, ' ');
-      if (text === 'Use This Template') {
+      if (text === 'Use This Template' && !(target.closest && target.closest('#kayakalpPage'))) {
         markChecklistButton();
       }
     }, true);
@@ -2759,7 +2762,7 @@ const API='https://script.google.com/macros/s/AKfycbzA_0AzFoP7lbBcmodT3QU8g-oqtp
 const $=id=>document.getElementById(id),esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const sget=k=>{try{return JSON.parse(localStorage.getItem(k))}catch(e){return null}},sset=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
 const SUG={dhh:['DH'],sdh:['DH'],chc:['DH'],phc:['PHCB','PHCN'],uphc:['PHCN','PHCB'],sc:['SC']},TL={SDH:'sdh',CHC:'chc',PHC:'phc','Sub-Centre':'sc',UPHC:'uphc',DHH:'dhh'};
-let cur='',A={},key='',tm=null,busy=false,applying=false;
+let cur='',A={},key='',tm=null,busy=false,applying=false,tplBytes=null,tplType='',tplName='',selId='';
 const items=t=>KK[t].themes.flatMap(h=>h.cats.flatMap(c=>c.items.map(i=>Object.assign({th:h.id,cat:c.id},i))));
 const pct=(a,b)=>b?Math.round(a/b*1000)/10:0,cls=p=>p>=70?'good':p>=50?'mid':'bad';
 $('kkType').innerHTML+=Object.keys(KK).map(k=>`<option value="${k}">${esc(KK[k].label)} (${KK[k].n} checkpoints)</option>`).join('');
@@ -2781,7 +2784,7 @@ R.pct=pct(R.ach,R.max);if(cur==='DH')R.eco=pct(R.th.H.a+(R.cat.A9||{a:0}).a+R.th
 function update(){if(!cur){$('kkTop').innerHTML='<div class="kk-e">Select a Kayakalp checklist above to begin.</div>';return}const R=calc(),T=KK[cur];
 $('kkTop').innerHTML=`<div class="kk-big ${cls(R.pct)}">${R.pct}%</div><div class="kk-n">${R.ach} / ${R.max} marks · ${R.ans} of ${R.n} checkpoints answered · ${esc(T.ver)}</div><div class="kk-g">${T.themes.map(h=>{const t=R.th[h.id],p=pct(t.a,t.m);return `<div class="kk-c"><div class="l">${h.id}. ${esc(h.name.slice(0,22))}</div><div class="v ${cls(p)}">${p}%</div></div>`}).join('')}</div>`;
 T.themes.forEach(h=>{const t=R.th[h.id],e=$('kkts_'+h.id);if(e)e.textContent=`${t.a}/${t.m} · ${t.ans}/${t.n} done`;h.cats.forEach(c=>{const e=$('kkcs_'+c.id);if(e)e.textContent=`${R.cat[c.id].a}/${R.cat[c.id].m}`})});if($('kkV2').classList.contains('on'))summary()}
-function render(){const L=$('kkListEl');if(!cur){L.innerHTML='';update();return}
+function render(){try{refreshRepo()}catch(e){}const L=$('kkListEl');if(!cur){L.innerHTML='';update();return}
 const row=i=>{const a=A[i.row]||{};return `<div class="cp" data-r="${i.row}"><div class="cl"><span class="ref">${esc(i.ref)}</span>${esc(i.t)}${i.m.split('/').filter(Boolean).map(m=>`<span class="mb">${esc(m.trim())}</span>`).join('')}${i.w?`<span class="wb">WASH · ${esc(i.w)}</span>`:''}</div>${i.v?`<details class="mv"><summary>Means of verification</summary><div>${esc(i.v)}</div></details>`:''}<div class="sg">${[0,1,2].map(v=>`<button data-v="${v}" class="${a.v===v?'on v'+v:''}">${['0 · Non-compliant','1 · Partial','2 · Compliant'][v]}</button>`).join('')}<input class="rm" placeholder="Remarks" value="${esc(a.r||'')}"></div></div>`};
 L.innerHTML=KK[cur].themes.map(h=>`<details class="th"><summary><span><b>${h.id}.</b> ${esc(h.name)}</span><span class="bd" id="kkts_${h.id}"></span></summary>${h.cats.map(c=>`<div class="cat"><div class="cn"><span>${esc(c.id)} · ${esc(c.name)}</span><span class="bd" id="kkcs_${c.id}"></span></div>${c.items.map(row).join('')}</div>`).join('')}</details>`).join('');update()}
 $('kkListEl').addEventListener('click',e=>{const b=e.target.closest('button[data-v]');if(!b)return;const r=b.closest('.cp').dataset.r,v=+b.dataset.v,a=A[r]=A[r]||{};a.v=a.v===v?undefined:v;b.closest('.sg').querySelectorAll('button').forEach(x=>x.className=(+x.dataset.v===a.v)?'on v'+a.v:'');if(a.v==null&&!a.r)delete A[r];persist();update()});
@@ -2805,17 +2808,49 @@ $('metaFacilitySel').addEventListener('input',()=>{if(applying)return;if(!fRaw()
 $('kkReset').onclick=()=>{if(cur&&confirm('Clear all Kayakalp answers for this checklist and facility?')){A={};persist();render()}};
 /* Excel */
 const buf=b=>Uint8Array.from(atob(b),c=>c.charCodeAt(0));
-async function exportX(type,filled){const wb=new ExcelJS.Workbook();await wb.xlsx.load(buf(TPL[type]).buffer);const ws=wb.worksheets[0],T=KK[type],m=getMeta(),f=filled&&type===cur;
+const tplBuf=(type,builtin)=>(!builtin&&tplBytes&&tplType===type)?tplBytes.slice(0):buf(TPL[type]).buffer;
+async function buildX(type,filled,builtin){const wb=new ExcelJS.Workbook();await wb.xlsx.load(tplBuf(type,builtin));const ws=wb.worksheets[0],T=KK[type],m=getMeta(),f=filled&&type===cur;
 items(type).forEach(i=>{const a=f?A[i.row]:null;ws.getCell('H'+i.row).value=a&&a.v!=null?a.v:null;ws.getCell(T.remCol+i.row).value=a&&a.r?a.r:null});
 if(f){ws.getCell('B8').value=m.facility_name;if(type==='DH'){ws.getCell('H8').value=[m.district,m.block].filter(Boolean).join(' / ');ws.getCell('H10').value=m.atype||'';ws.getCell('B10').value=m.start||''}else ws.getCell('H8').value=m.atype||''}
-wb.calcProperties={fullCalcOnLoad:true};const out=await wb.xlsx.writeBuffer(),a=document.createElement('a');a.href=URL.createObjectURL(new Blob([out]));a.download=`Kayakalp_${type}_${f?(m.facility_name||'filled').replace(/\W+/g,'_'):'blank'}.xlsx`;a.click()}
+wb.calcProperties={fullCalcOnLoad:true};return{out:await wb.xlsx.writeBuffer(),f,m}}
+function saveBlob(blob,name){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
+async function exportX(type,filled){const{out,f,m}=await buildX(type,filled);saveBlob(new Blob([out]),`Kayakalp_${type}_${f?(m.facility_name||'filled').replace(/\W+/g,'_'):'blank'}.xlsx`)}
 $('kkBlank').onclick=()=>cur?exportX(cur,false):alert('Select a Kayakalp checklist first.');$('kkFill').onclick=()=>cur?exportX(cur,true):alert('Select a Kayakalp checklist first.');
-$('kkRepo').innerHTML=Object.keys(KK).map(k=>`<button class="kk-b p" data-k="${k}">${esc(KK[k].label)} — blank</button>`).join('');$('kkRepo').onclick=e=>{const k=e.target.dataset.k;if(k)exportX(k,false)};
+/* Upload Repository – mirrors the NQAS repository: select a template, upload your own, download all blanks as ZIP */
+const KK_FAC={DH:'DH, SDH, CHC',PHCB:'PHC with beds',PHCN:'UPHC, APHC (without beds)',SC:'Sub Centre / AAM-SC'};
+const kkFileName=k=>('Kayakalp '+KK[k].label).replace(/\s*\/\s*/g,'-')+'.xlsx';
+function renderKkRepo(){const g=$('kkRepoGrid');g.innerHTML=Object.keys(KK).map(k=>`<div class="repository-card"><h3>${esc(KK[k].label)}</h3><p>${esc(kkFileName(k))}<br><strong>Facility type:</strong> ${esc(KK_FAC[k]||KK[k].label)}</p><div class="repo-actions"><button class="btn primary" type="button" data-kk-repo="${k}">Use This Template</button></div></div>`).join('');
+g.querySelectorAll('[data-kk-repo]').forEach(b=>b.addEventListener('click',()=>selectKkTemplate(b.dataset.kkRepo)))}
+function refreshRepo(){const s=$('kkRepoStatus');if(!s)return;
+if(tplBytes&&tplType&&tplType===cur)s.innerHTML=`<strong>Uploaded:</strong> ${esc(tplName)}. This workbook is now active for <strong>Download Blank / Filled</strong> (${esc(KK[cur].label)}).`;
+else if(selId&&selId===cur)s.innerHTML=`<strong>Selected:</strong> ${esc(KK[cur].label)}. This template is now active for <strong>Download Blank / Filled</strong>.`;
+else s.textContent='No repository template selected. Download Filled will use the built-in Kayakalp workbook for the checklist chosen above.';
+const u=$('kkRepoUpload');if(u)u.classList.toggle('checklist-selected',!!(tplBytes||selId))}
+function selectKkTemplate(id){if(!KK[id])return;tplBytes=null;tplType='';tplName='';selId=id;if(cur!==id){const s=$('kkType');s.value=id;s.onchange()}else refreshRepo();refreshRepo()}
+$('kkRepoClear').onclick=()=>{tplBytes=null;tplType='';tplName='';selId='';refreshRepo()};
+$('kkRepoZip').onclick=async()=>{if(typeof JSZip==='undefined'||typeof ExcelJS==='undefined')return alert('ZIP library failed to load.');const b=$('kkRepoZip'),lbl=b.textContent;b.textContent='Preparing ZIP...';b.disabled=true;
+try{const z=new JSZip();for(const k of Object.keys(KK)){const{out}=await buildX(k,false,true);z.file(kkFileName(k),out)}saveBlob(await z.generateAsync({type:'blob'}),'Kayakalp_All_Blank_Checklists.zip')}
+catch(e){console.error(e);alert('Could not generate the ZIP of blank checklists.')}finally{b.textContent=lbl;b.disabled=false}};
+renderKkRepo();
 $('kkUp').onclick=()=>$('kkFile').click();
-$('kkFile').onchange=async function(){const f=this.files[0];this.value='';if(!f)return;const w=XLSX.read(await f.arrayBuffer()),ws=w.Sheets[w.SheetNames[0]],g=(c,r)=>{const x=ws[c+r];return x?x.v:undefined};let best='',bs=0;
+$('kkRepoUpload').onclick=()=>$('kkRepoFile').click();
+/* shared reader: detects which Kayakalp layout a workbook matches; asTemplate=true also makes it the active download template */
+async function kkReadFile(f,asTemplate){let ab,w;try{ab=await f.arrayBuffer();w=XLSX.read(ab)}catch(e){return alert('Could not read this workbook: '+(e.message||e))}
+const ws=w.Sheets[w.SheetNames[0]],g=(c,r)=>{const x=ws[c+r];return x?x.v:undefined};let best='',bs=0;
 Object.keys(KK).forEach(k=>{const its=items(k),h=its.filter(i=>String(g('A',i.row)||'').replace(/[\s.]/g,'')===i.ref.replace(/[\s.]/g,'')).length/its.length;if(h>bs){bs=h;best=k}});
-if(bs<.8)return alert('This file does not match any Kayakalp checklist layout.');if(!confirm(`Detected: ${KK[best].label}. Import compliance scores and remarks? (An unedited template has 2 pre-filled in every row.)`))return;
-if(best!==cur){persist();cur=best;$('kkType').value=best;key='';loadKey(mk(),true)}let n=0;items(cur).forEach(i=>{const v=g('H',i.row),r=g(KK[cur].remCol,i.row);if(v!==''&&v!=null&&[0,1,2].includes(+v)){(A[i.row]=A[i.row]||{}).v=+v;n++}if(r)(A[i.row]=A[i.row]||{}).r=String(r)});persist();render();alert(n+' scores imported.')};
+if(bs<.8)return alert('This file does not match any Kayakalp checklist layout.');
+let tplOk=false;if(asTemplate){try{await new ExcelJS.Workbook().xlsx.load(ab.slice(0));tplOk=true}catch(e){console.warn('ExcelJS could not load the uploaded template',e)}}
+const msg=asTemplate?`Detected: ${KK[best].label}.${tplOk?' It will be the active template for Download Blank / Filled.':' (This workbook cannot be used as a download template, so the built-in workbook will be used for downloads.)'}\n\nAlso import its compliance scores and remarks? (An unedited template has 2 pre-filled in every row — choose Cancel to use it only as a blank template.)`:`Detected: ${KK[best].label}. Import compliance scores and remarks? (An unedited template has 2 pre-filled in every row.)`;
+const doImport=confirm(msg);
+if(!asTemplate&&!doImport)return;
+if(best!==cur){persist();cur=best;$('kkType').value=best;key='';loadKey(mk(),true)}
+if(asTemplate){if(tplOk){tplBytes=ab.slice(0);tplType=best;tplName=f.name.replace(/\.xlsx$/i,'')}else{tplBytes=null;tplType='';tplName=''}selId=''}
+let n=0;if(doImport){items(cur).forEach(i=>{const v=g('H',i.row),r=g(KK[cur].remCol,i.row);if(v!==''&&v!=null&&[0,1,2].includes(+v)){(A[i.row]=A[i.row]||{}).v=+v;n++}if(r)(A[i.row]=A[i.row]||{}).r=String(r)})}
+persist();render();
+if(asTemplate){const s=$('kkRepoStatus');if(s&&tplOk)s.innerHTML=`<strong>Uploaded:</strong> ${esc(f.name)}. This workbook is now active for <strong>Download Blank / Filled</strong> (${esc(KK[cur].label)}).${doImport?' '+n+' scores imported.':''}`;else if(s)s.textContent=`Loaded ${f.name} (${KK[cur].label}); ${n} scores imported. Downloads use the built-in workbook.`}
+else alert(n+' scores imported.')}
+$('kkFile').onchange=function(){const f=this.files[0];this.value='';if(f)kkReadFile(f,false)};
+$('kkRepoFile').onchange=function(){const f=this.files[0];this.value='';if(f)kkReadFile(f,true)};
 /* cloud sync – reuses the NQAS login session; records are stored as facility_type KK_* */
 const sess=()=>sget('nqas_cloud_session');
 async function api(action,p){const s=sess();if(!s||!s.token)throw new Error('nosession');const r=await fetch(API,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(Object.assign({action,token:s.token},p))}),j=await r.json();if(j.error==='auth'){dispatchEvent(new Event('qatauth'));throw new Error('auth')}return j}
@@ -2886,8 +2921,8 @@ addEventListener('qatauth',()=>{if(profile)expired();});
 /* ---------- UI ---------- */
 const tb=document.querySelector('.topbar .toolbar');
 function mkBtn(t,fn){const b=document.createElement('button');b.className='btn';b.textContent=t;b.onclick=fn;b.style.display='none';tb.appendChild(b);return b;}
-const chip=mkBtn('☁',()=>needAuth?showLogin('Session expired – sign in to resume cloud sync.'):push()), listBtn=mkBtn('Saved assessments',openList), outBtn=mkBtn('⏻',signOut);
-outBtn.title='Sign out';outBtn.setAttribute('aria-label','Sign out');outBtn.style.cssText+=';font-size:18px;line-height:1;padding:6px 11px;min-width:40px';
+const chip=mkBtn('☁',()=>needAuth?showLogin('Session expired – sign in to resume cloud sync.'):push()), listBtn=mkBtn('Saved assessments',openList), outBtn=mkBtn('⏻ Sign out',signOut);
+outBtn.title='Sign out';outBtn.setAttribute('aria-label','Sign out');outBtn.style.cssText+=';font-size:13px;font-weight:700;padding:6px 11px';
 const netB=document.createElement('span');netB.id='qatNet';netB.setAttribute('role','status');netB.style.cssText='display:inline-flex;align-items:center;gap:7px;font:700 13px Calibri,Arial,sans-serif;padding:6px 12px;border-radius:999px;border:1px solid #ffffff33;white-space:nowrap';
 const grp=document.createElement('span');grp.style.cssText='display:inline-flex;gap:6px;align-items:center;margin-left:auto';grp.append(netB,outBtn);tb.appendChild(grp);
 function netDot(off){const o=LANG()==='or';return '<i style="width:10px;height:10px;border-radius:50%;flex:none;background:'+(off?'#a16207':'#22c55e')+';box-shadow:0 0 0 3px '+(off?'#a1620744':'#22c55e55')+'"></i>'+(off?(o?'ଅଫଲାଇନ୍':'Offline'):(o?'ଅନଲାଇନ୍':'Online'));}
@@ -2895,7 +2930,7 @@ function paintNet(){const off=NET()==='offline';netB.innerHTML=netDot(off);netB.
 addEventListener('qatnet',paintNet);setInterval(paintNet,2000);paintNet();
 function setStatus(s){ if(!profile)return;
   const m={synced:'● Synced',syncing:'↻ Syncing…',offline:'⚠ Offline – will retry',idle:'○ Select facility to sync',auth:'🔒 Session expired – tap to sign in'};
-  chip.textContent='☁ '+(profile.role==='admin'?'State admin':profile.district)+'  '+(m[s]||s);}
+  chip.textContent='☁ '+(profile.role==='admin'?'State admin':profile.role==='block'?profile.block+' (Block)':profile.role==='facility'?profile.facility:profile.district)+'  '+(m[s]||s);}
 const ov=document.createElement('div');
 ov.style.cssText='position:fixed;inset:0;z-index:9999;background:#12091f;display:none;align-items:center;justify-content:center;padding:16px;font-family:Calibri,Arial,sans-serif;color:#eee7ff';
 document.body.appendChild(ov);
@@ -2903,16 +2938,25 @@ function box(h,wide){ov.innerHTML='<div style="background:#1d1030;border:1px sol
 const fld='style="width:100%;margin:6px 0 12px;padding:10px;border-radius:8px;border:1px solid #6b3a8f;background:#140c21;color:#fff;font-size:15px"';
 function showLogin(msg){
   const ds=NQAS_GEO.districts.map(d=>d.label).sort((a,b)=>a.localeCompare(b));
-  box('<h2 style="margin:0 0 4px">Quality Assessment Toolkit</h2><p style="margin:0 0 14px;opacity:.8;font-size:13px">District login</p>'+
+  box('<h2 style="margin:0 0 4px">Quality Assessment Toolkit</h2><p style="margin:0 0 14px;opacity:.8;font-size:13px">District / Block / Facility login</p>'+
    '<label>District</label><select id="clD" '+fld+'><option value="">Select district…</option>'+ds.map(d=>'<option>'+d+'</option>').join('')+'<option>State Admin</option></select>'+
+   '<div id="clBkW" style="display:none"><label>Block (optional)</label><select id="clBk" '+fld+'><option value="">District login (all blocks)</option></select></div>'+
+   '<div id="clFcW" style="display:none"><label>Facility (optional)</label><select id="clFc" '+fld+'><option value="">Block login (all facilities)</option></select></div>'+
    '<label>Password</label><div style="position:relative;display:flow-root"><input id="clP" type="password" autocomplete="current-password" '+fld.replace('padding:10px','padding:10px 46px 10px 10px')+'><button type="button" id="clE" aria-label="Show password" title="Show / hide password" style="position:absolute;right:4px;top:6px;bottom:12px;width:40px;border:0;background:transparent;color:#d8c8f0;cursor:pointer;display:flex;align-items:center;justify-content:center"><svg id="clEi" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg></button></div>'+
    '<div id="clM" style="color:#fb7185;min-height:18px;font-size:13px;margin-bottom:8px">'+(msg||'')+'</div>'+
    '<button id="clB" class="btn primary" style="width:100%;padding:10px">Sign in</button>'+
    '<button id="clS" class="btn" style="width:100%;padding:8px;margin-top:8px;font-size:12px">Continue offline (no cloud sync)</button>');
-  const go=async()=>{const d=$('clD').value,p=$('clP').value.trim(); if(!d||!p){$('clM').textContent=LT('Choose district and enter password.');return;}
+  let ready=false;
+  const fillBk=()=>{const d=$('clD').value,bk=$('clBk'),w=$('clBkW');const dd=NQAS_GEO.districts.find(x=>x.label===d);const bs=dd?NQAS_GEO.blocks.filter(b=>b.district===dd.name).sort((a,b)=>a.label.localeCompare(b.label)):[];
+    w.style.display=bs.length?'':'none';bk.innerHTML='<option value="">District login (all blocks)</option>'+bs.map(b=>'<option value="'+b.name+'">'+b.label+'</option>').join('');fillFc(false);if(ready)applyL()};
+  const TL2={sc:'Sub-Centre',phc:'PHC',chc:'CHC',sdh:'SDH',uphc:'UPHC',dhh:'DHH'},fid=f=>f.type+'|'+f.label;
+  const fillFc=(ap)=>{const b=$('clBk').value,fc=$('clFc'),w=$('clFcW');const seen={};const fs=b?NQAS_GEO.facilities.filter(f=>f.block===b&&!seen[fid(f)]&&(seen[fid(f)]=1)).sort((x,y)=>x.label.localeCompare(y.label)):[];
+    w.style.display=fs.length?'':'none';fc.innerHTML='<option value="">Block login (all facilities)</option>'+fs.map(f=>'<option value="'+fid(f).replace(/"/g,'&quot;')+'">'+f.label+' ('+(TL2[f.type]||f.type)+')</option>').join('');if(ap!==false&&ready)applyL()};
+  $('clD').onchange=fillBk;$('clBk').onchange=()=>fillFc();fillBk();
+  const go=async()=>{const d=$('clD').value,p=$('clP').value.trim(),bk=($('clBk')||{}).value||'',fc=($('clFc')||{}).value||''; if(!d||!p){$('clM').textContent=LT('Choose district and enter password.');return;}
     $('clM').textContent=LT('Signing in…');
-    try{const j=await api('login',{district:d,password:p}); if(!j.ok){$('clM').textContent=j.error;return;}
-      token=j.token; origSet.call(localStorage,'nqas_cloud_session',JSON.stringify({token,district:j.district,role:j.role})); start({district:j.district,role:j.role});schedule(500);}
+    try{const j=await api('login',{district:d,block:bk,facility:fc,password:p}); if(!j.ok){$('clM').textContent=j.error;return;}
+      token=j.token; origSet.call(localStorage,'nqas_cloud_session',JSON.stringify({token,district:j.district,role:j.role,block:j.block||'',block_id:j.block_id||'',facility:j.facility||'',facility_id:j.facility_id||''})); start({district:j.district,role:j.role,block:j.block||'',block_id:j.block_id||'',facility:j.facility||'',facility_id:j.facility_id||''});schedule(500);}
     catch(e){$('clM').textContent=LT('Cannot reach server. Check internet and the API URL.');}};
   $('clB').onclick=go; $('clP').onkeydown=e=>{if(e.key==='Enter')go();}; $('clS').onclick=()=>ov.style.display='none';
   $('clE').onclick=()=>{const p=$('clP'),s=p.type==='password';p.type=s?'text':'password';$('clE').setAttribute('aria-label',s?'Hide password':'Show password');$('clEi').innerHTML=s?'<path d="M17.94 17.94A10.9 10.9 0 0 1 12 19c-7 0-11-7-11-7a19.8 19.8 0 0 1 5.06-5.94M9.9 4.24A10.9 10.9 0 0 1 12 5c7 0 11 7 11 7a19.8 19.8 0 0 1-3.17 4.19M1 1l22 22"/><path d="M14.12 14.12a3 3 0 1 1-4.24-4.24"/>':'<path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/>'};
@@ -2928,12 +2972,12 @@ function showLogin(msg){
       [...e.childNodes].filter(n=>n.nodeType===3&&n.nodeValue.trim()).forEach(n=>{if(!n.__en)n.__en=n.nodeValue;n.nodeValue=o?(OR[n.__en.trim()]||n.__en):n.__en})});
     document.documentElement.lang=o?'or':'en';mark('#lgL','l',LANG(),'#7c3aaa')};
   const applyN=()=>{const off=NET()==='offline';const ns=$('lgNs');ns.innerHTML=netDot(off);ns.style.background=off?'#fde047':'transparent';ns.style.color=off?'#1f1300':'#fff';
-    ['clD','clP','clB'].forEach(i=>{const e=$(i);e.disabled=off;e.style.opacity=off?.45:1});
+    ['clD','clBk','clFc','clP','clB'].forEach(i=>{const e=$(i);e.disabled=off;e.style.opacity=off?.45:1});
     $('clS').style.cssText+=off?';background:#7c3aaa;color:#fff;font-size:14px;padding:11px':';background:;color:;font-size:12px;padding:8px'};
   bar.querySelectorAll('#lgL button').forEach(b=>b.onclick=()=>{try{localStorage.setItem('qat_lang',b.dataset.l)}catch(e){};applyL();applyN()});
-  applyL();applyN();
+  applyL();applyN();ready=true;
 }
-const OR={'Quality Assessment Toolkit':'ଗୁଣବତ୍ତା ମୂଲ୍ୟାଙ୍କନ ଟୁଲକିଟ୍','District login':'ଜିଲ୍ଲା ଲଗଇନ୍','District':'ଜିଲ୍ଲା','Select district…':'ଜିଲ୍ଲା ବାଛନ୍ତୁ…','State Admin':'ରାଜ୍ୟ ଆଡମିନ୍','Password':'ପାସୱାର୍ଡ','Sign in':'ସାଇନ୍ ଇନ୍','Continue offline (no cloud sync)':'ଅଫଲାଇନ୍ ଜାରି ରଖନ୍ତୁ (କ୍ଲାଉଡ୍ ସିଙ୍କ୍ ନାହିଁ)','Choose district and enter password.':'ଜିଲ୍ଲା ବାଛନ୍ତୁ ଓ ପାସୱାର୍ଡ ଦିଅନ୍ତୁ।','Signing in…':'ସାଇନ୍ ଇନ୍ ହେଉଛି…','Cannot reach server. Check internet and the API URL.':'ସର୍ଭର୍ ସହ ସଂଯୋଗ ହେଉନାହିଁ। ଇଣ୍ଟରନେଟ୍ ଯାଞ୍ଚ କରନ୍ତୁ।'};
+const OR={'Quality Assessment Toolkit':'ଗୁଣବତ୍ତା ମୂଲ୍ୟାଙ୍କନ ଟୁଲକିଟ୍','District / Block / Facility login':'ଜିଲ୍ଲା / ବ୍ଲକ୍ / ସ୍ୱାସ୍ଥ୍ୟ କେନ୍ଦ୍ର ଲଗଇନ୍','Facility (optional)':'ସ୍ୱାସ୍ଥ୍ୟ କେନ୍ଦ୍ର (ଇଚ୍ଛାଧୀନ)','Block login (all facilities)':'ବ୍ଲକ୍ ଲଗଇନ୍ (ସମସ୍ତ କେନ୍ଦ୍ର)','Block (optional)':'ବ୍ଲକ୍ (ଇଚ୍ଛାଧୀନ)','District login (all blocks)':'ଜିଲ୍ଲା ଲଗଇନ୍ (ସମସ୍ତ ବ୍ଲକ୍)','District':'ଜିଲ୍ଲା','Select district…':'ଜିଲ୍ଲା ବାଛନ୍ତୁ…','State Admin':'ରାଜ୍ୟ ଆଡମିନ୍','Password':'ପାସୱାର୍ଡ','Sign in':'ସାଇନ୍ ଇନ୍','Continue offline (no cloud sync)':'ଅଫଲାଇନ୍ ଜାରି ରଖନ୍ତୁ (କ୍ଲାଉଡ୍ ସିଙ୍କ୍ ନାହିଁ)','Choose district and enter password.':'ଜିଲ୍ଲା ବାଛନ୍ତୁ ଓ ପାସୱାର୍ଡ ଦିଅନ୍ତୁ।','Signing in…':'ସାଇନ୍ ଇନ୍ ହେଉଛି…','Cannot reach server. Check internet and the API URL.':'ସର୍ଭର୍ ସହ ସଂଯୋଗ ହେଉନାହିଁ। ଇଣ୍ଟରନେଟ୍ ଯାଞ୍ଚ କରନ୍ତୁ।'};
 function LANG(){try{return localStorage.getItem('qat_lang')||'en'}catch(e){return 'en'}}
 function NET(){try{return localStorage.getItem('qat_net')||(navigator.onLine?'online':'offline')}catch(e){return navigator.onLine?'online':'offline'}}
 function LT(s){return LANG()==='or'&&OR[s]||s}
@@ -2945,6 +2989,8 @@ function start(p){
   if(p.role!=='admin'){
     const sel=$('metaDistrictSel'), o=[...sel.options].find(o=>o.value&&(norm(o.value)===norm(p.district)||norm(o.textContent)===norm(p.district)));
     if(o){sel.value=o.value;sel.dispatchEvent(new Event('change'));} sel.disabled=true;
+    if(p.role==='block'||p.role==='facility'){const bs=$('metaBlockSel'),bo=[...bs.options].find(x=>x.value&&(x.value===p.block_id||norm(x.textContent)===norm(p.block)));if(bo){bs.value=bo.value;bs.dispatchEvent(new Event('change'));}bs.disabled=true;}
+    if(p.role==='facility'){const f=NQAS_GEO.facilities.find(x=>x.block===p.block_id&&x.type+'|'+x.label===p.facility_id),fi=$('metaFacilitySel'),T={sc:'Sub-Centre',phc:'PHC',chc:'CHC',sdh:'SDH',uphc:'UPHC',dhh:'DHH'};if(f){fi.value=f.label+' ('+(T[f.type]||f.type)+')';fi.dispatchEvent(new Event('input'));}fi.disabled=true;}
   }
   lastKey=''; setStatus('idle');
 }
@@ -2997,7 +3043,7 @@ async function openList(){
   box('<p>Loading…</p>',1); let j;
   try{j=await api('list',{});}catch(e){ if(e.message!=='auth')box('<p style="color:#fb7185">Could not load (offline?)</p><button id="clX" class="btn primary">Close</button>',1),$('clX').onclick=()=>ov.style.display='none'; return; }
   j.rows=(j.rows||[]).filter(r=>!/^KK_/.test(r.facility_type));const rows=j.rows.map((r,i)=>'<tr style="border-top:1px solid #4b2868"><td style="padding:6px">'+(profile.role==='admin'?r.district+' · ':'')+r.facility_name+'</td><td>'+((NQAS_DATA[r.facility_type]||{}).label||r.facility_type)+'</td><td>'+new Date(r.updated_at).toLocaleString()+'</td><td><button class="btn" data-i="'+i+'">Open</button></td></tr>').join('');
-  box('<h3 style="margin:0 0 10px">Saved assessments'+(profile.role==='admin'?' (all districts)':' – '+profile.district)+'</h3>'+
+  box('<h3 style="margin:0 0 10px">Saved assessments'+(profile.role==='admin'?' (all districts)':profile.role==='block'?' – '+profile.block+', '+profile.district:profile.role==='facility'?' – '+profile.facility:' – '+profile.district)+'</h3>'+
     (rows?'<table style="width:100%;font-size:13px;border-collapse:collapse"><tr style="text-align:left;opacity:.7"><th style="padding:6px">Facility</th><th>Type</th><th>Last saved</th><th></th></tr>'+rows+'</table>':'<p>Nothing saved yet.</p>')+'<button id="clX" class="btn primary" style="margin-top:12px">Close</button>',1);
   $('clX').onclick=()=>ov.style.display='none';
   ov.querySelectorAll('button[data-i]').forEach(b=>b.onclick=()=>openRec(j.rows[b.dataset.i]));
@@ -3005,7 +3051,7 @@ async function openList(){
 function openRec(r){
   ov.style.display='none'; const fd=$('facilityDropdown');
   if(profile.role==='admin'){const o=[...$('metaDistrictSel').options].find(o=>norm(o.textContent)===norm(r.district)); if(o){$('metaDistrictSel').value=o.value;$('metaDistrictSel').dispatchEvent(new Event('change'));}}
-  $('metaFacilitySel').disabled=false; $('metaFacilitySel').value=r.facility_name; $('metaFacilityName').value=r.facility_name;
+  $('metaFacilitySel').disabled=profile.role==='facility'; $('metaFacilitySel').value=r.facility_name; $('metaFacilityName').value=r.facility_name;
   fd.value=r.facility_type;
   if(fd.value!==r.facility_type){alert('This facility type is hidden right now. Set Assessment type to "Self" (for Virtual types) and open it again.');return;}
   fd.dispatchEvent(new Event('change')); lastKey='';
@@ -3019,7 +3065,7 @@ addEventListener('pagehide',()=>{if(profile&&ident()){clearTimeout(timer);push()
 
 if(!API_URL){console.warn('NQAS cloud sync not configured – local-only mode.');return;}
 let saved=null; try{saved=JSON.parse(localStorage.getItem('nqas_cloud_session'));}catch(e){}
-if(saved&&saved.token){token=saved.token;start({district:saved.district,role:saved.role});} else showLogin();
+if(saved&&saved.token){token=saved.token;start({district:saved.district,role:saved.role,block:saved.block||'',block_id:saved.block_id||'',facility:saved.facility||'',facility_id:saved.facility_id||''});} else showLogin();
 })();
 
 </script>
