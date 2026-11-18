@@ -69,6 +69,7 @@
     'District…': 'ଜିଲ୍ଲା…',
     'Block…': 'ବ୍ଲକ୍…',
     'Assessment type…': 'ମୂଲ୍ୟାଙ୍କନ ପ୍ରକାର…',
+    'Assessment type': 'ମୂଲ୍ୟାଙ୍କନ ପ୍ରକାର…',
     'Select Facility Type': 'କେନ୍ଦ୍ର ପ୍ରକାର ବାଛନ୍ତୁ',
     'Select Kayakalp checklist…': 'କାୟାକଳ୍ପ ଚେକ୍‌ଲିଷ୍ଟ ବାଛନ୍ତୁ…',
     'Assessor 1 name': 'ମୂଲ୍ୟାଙ୍କକ 1 ଙ୍କ ନାମ',
