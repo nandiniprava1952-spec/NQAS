@@ -2818,11 +2818,11 @@ if(bs<.8)return alert('This file does not match any Kayakalp checklist layout.')
 if(best!==cur){persist();cur=best;$('kkType').value=best;key='';loadKey(mk(),true)}let n=0;items(cur).forEach(i=>{const v=g('H',i.row),r=g(KK[cur].remCol,i.row);if(v!==''&&v!=null&&[0,1,2].includes(+v)){(A[i.row]=A[i.row]||{}).v=+v;n++}if(r)(A[i.row]=A[i.row]||{}).r=String(r)});persist();render();alert(n+' scores imported.')};
 /* cloud sync – reuses the NQAS login session; records are stored as facility_type KK_* */
 const sess=()=>sget('nqas_cloud_session');
-async function api(action,p){const s=sess();if(!s||!s.token)throw new Error('nosession');const r=await fetch(API,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(Object.assign({action,token:s.token},p))}),j=await r.json();if(j.error==='auth')throw new Error('auth');return j}
+async function api(action,p){const s=sess();if(!s||!s.token)throw new Error('nosession');const r=await fetch(API,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(Object.assign({action,token:s.token},p))}),j=await r.json();if(j.error==='auth'){dispatchEvent(new Event('qatauth'));throw new Error('auth')}return j}
 const st=t=>$('kkSt').textContent=t;
 const ident=()=>{const s=sess(),n=fName(),d=s?(s.role==='admin'?dName():s.district):'';return s&&cur&&n&&d?{district:d,facility_type:'KK_'+cur,facility_name:n}:null};
 function sched(ms){if(applying||!sess())return;clearTimeout(tm);tm=setTimeout(push,ms==null?2000:ms)}
-async function push(){const id=ident();if(!id){st(sess()?'○ Select facility to sync':'Offline mode – sign in to sync');return}if(busy){sched(1500);return}busy=true;st('↻ Syncing…');try{const j=await api('push',Object.assign({},id,{data:{answers:A,meta:getMeta()}}));st(j.ok?'● Synced':'⚠ Offline – will retry');if(!j.ok)sched(20000)}catch(e){st(e.message==='auth'?'Session expired – reload and sign in':'⚠ Offline – will retry');if(e.message!=='auth')sched(20000)}busy=false}
+async function push(){const id=ident();if(!id){st(sess()?'○ Select facility to sync':'Offline mode – sign in to sync');return}if(busy){sched(1500);return}busy=true;st('↻ Syncing…');try{const j=await api('push',Object.assign({},id,{data:{answers:A,meta:getMeta()}}));st(j.ok?'● Synced':'⚠ Offline – will retry');if(!j.ok)sched(20000)}catch(e){st(e.message==='auth'?'Session expired – tap ☁ to sign in':'⚠ Offline – will retry');if(e.message!=='auth')sched(20000)}busy=false}
 async function touch(){const id=ident();if(!id){st(sess()?'○ Select facility to sync':'Offline mode – sign in to sync');return}st('↻ Syncing…');let j;try{j=await api('pull',id)}catch(e){st('⚠ Offline');return}if(!j.ok){st('⚠ Offline');return}const has=Object.keys(A).length>0;if(!j.found){has?sched(300):st('● Synced');return}
 if(JSON.stringify(j.data.answers||{})===JSON.stringify(A)){st('● Synced');return}if(!has||confirm('A cloud copy exists (saved '+new Date(j.updated_at).toLocaleString()+' by '+(j.updated_by||'someone')+').\n\nOK = load the cloud copy (replaces this device\'s copy)\nCancel = keep this device\'s copy and upload it')){applying=true;try{A=j.data.answers||{};const m=j.data.meta||{};for(const i in MF)if(m[MF[i]]!=null)$(i).value=m[MF[i]];$('metaAssessmentType').dispatchEvent(new Event('change',{bubbles:true}));for(const i in MF)if(m[MF[i]]!=null)$(i).value=m[MF[i]];sset(key,{a:A,m:getMeta()});render()}finally{applying=false}st('● Synced')}else sched(300)}
 $('kkList').onclick=async()=>{const P=$('kkSaved');P.innerHTML='<p class="kk-n">Loading…</p>';let j;try{j=await api('list',{})}catch(e){P.innerHTML='<p class="bad">'+(e.message==='nosession'?'Sign in with your district login to see saved assessments (reload the page for the login prompt).':'Could not load (offline or session expired).')+'</p>';return}
@@ -2845,6 +2845,19 @@ render();
 })();
 </script>
 
+<script id="net-monitor">
+/* Real connectivity check: navigator.onLine + a HEAD ping to our own host (HEAD bypasses the service worker). Writes qat_net and fires 'qatnet' on change. */
+(function(){var last=null,busy=false,PING='manifest.webmanifest';
+function set(on){var v=on?'online':'offline';try{localStorage.setItem('qat_net',v)}catch(e){}if(v!==last){last=v;dispatchEvent(new Event('qatnet'))}}
+function probe(){if(!navigator.onLine){set(false);return}
+if(!/^https?:$/.test(location.protocol)){set(true);return}
+if(busy)return;busy=true;var c=new AbortController(),t=setTimeout(function(){c.abort()},6000);
+fetch(PING+'?qatping='+Date.now(),{method:'HEAD',cache:'no-store',signal:c.signal}).then(function(){set(true)},function(){set(false)}).then(function(){clearTimeout(t);busy=false})}
+set(navigator.onLine);probe();
+addEventListener('offline',function(){set(false)});addEventListener('online',function(){set(true);probe()});
+document.addEventListener('visibilitychange',function(){if(!document.hidden)probe()});
+setInterval(probe,15000)})();
+</script>
 <script id="nqas-cloud-sync">
 (function(){
 /* ====== CONFIG: paste your Apps Script Web App URL (ends with /exec) ====== */
@@ -2852,7 +2865,7 @@ const API_URL='https://script.google.com/macros/s/AKfycbzA_0AzFoP7lbBcmodT3QU8g-
 /* ========================================================================== */
 const $=id=>document.getElementById(id), norm=s=>(s||'').trim().toLowerCase();
 const origSet=Storage.prototype.setItem, origRem=Storage.prototype.removeItem;
-let token='', profile=null, lastKey='', timer=null, pushing=false, applying=false;
+let token='', profile=null, lastKey='', timer=null, pushing=false, applying=false, needAuth=false;
 const schedule=ms=>{clearTimeout(timer);timer=setTimeout(push,ms==null?2000:ms);};
 const hook=k=>{ if(!applying && profile && /^nqas_(answers|pss)_/.test(k)) schedule(); };
 Storage.prototype.setItem=function(k){origSet.apply(this,arguments);hook(k);};
@@ -2860,25 +2873,28 @@ Storage.prototype.removeItem=function(k){origRem.apply(this,arguments);hook(k);}
 
 /* ---------- API ---------- */
 async function api(action,payload){
+  if(needAuth&&action!=='login'){setStatus('auth');throw new Error('auth');}
   const res=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(Object.assign({action,token},payload))});
   const j=await res.json();
   if(j.error==='auth'){expired();throw new Error('auth');}
   return j;
 }
-function expired(){token='';profile=null;origRem.call(localStorage,'nqas_cloud_session');[chip,listBtn,outBtn].forEach(b=>b.style.display='none');showLogin('Session expired – please sign in again.');}
+/* the server rejected the token: stay signed in on this device (data is safe locally); sync resumes after re-sign-in via the cloud chip. Only the sign-out button ends the session. */
+function expired(){needAuth=true;setStatus('auth');}
+addEventListener('qatauth',()=>{if(profile)expired();});
 
 /* ---------- UI ---------- */
 const tb=document.querySelector('.topbar .toolbar');
 function mkBtn(t,fn){const b=document.createElement('button');b.className='btn';b.textContent=t;b.onclick=fn;b.style.display='none';tb.appendChild(b);return b;}
-const chip=mkBtn('☁',()=>push()), listBtn=mkBtn('Saved assessments',openList), outBtn=mkBtn('⏻',signOut);
+const chip=mkBtn('☁',()=>needAuth?showLogin('Session expired – sign in to resume cloud sync.'):push()), listBtn=mkBtn('Saved assessments',openList), outBtn=mkBtn('⏻',signOut);
 outBtn.title='Sign out';outBtn.setAttribute('aria-label','Sign out');outBtn.style.cssText+=';font-size:18px;line-height:1;padding:6px 11px;min-width:40px';
-const netB=document.createElement('button');netB.className='btn';netB.type='button';netB.style.cssText='font-weight:700';
+const netB=document.createElement('span');netB.id='qatNet';netB.setAttribute('role','status');netB.style.cssText='display:inline-flex;align-items:center;gap:7px;font:700 13px Calibri,Arial,sans-serif;padding:6px 12px;border-radius:999px;border:1px solid #ffffff33;white-space:nowrap';
 const grp=document.createElement('span');grp.style.cssText='display:inline-flex;gap:6px;align-items:center;margin-left:auto';grp.append(netB,outBtn);tb.appendChild(grp);
-function paintNet(){const off=NET()==='offline';netB.textContent=off?'○ Offline':'● Online';netB.title='Tap to switch Online / Offline';netB.style.background=off?'#eab308':'#16a34a';netB.style.color=off?'#1f1300':'#fff';netB.style.borderColor='transparent'}
-netB.onclick=()=>{try{localStorage.setItem('qat_net',NET()==='offline'?'online':'offline')}catch(e){};paintNet();dispatchEvent(new Event('qatnet'))};
-addEventListener('qatnet',paintNet);addEventListener('online',()=>{try{localStorage.setItem('qat_net','online')}catch(e){};paintNet()});addEventListener('offline',()=>{try{localStorage.setItem('qat_net','offline')}catch(e){};paintNet()});paintNet();
+function netDot(off){const o=LANG()==='or';return '<i style="width:10px;height:10px;border-radius:50%;flex:none;background:'+(off?'#a16207':'#22c55e')+';box-shadow:0 0 0 3px '+(off?'#a1620744':'#22c55e55')+'"></i>'+(off?(o?'ଅଫଲାଇନ୍':'Offline'):(o?'ଅନଲାଇନ୍':'Online'));}
+function paintNet(){const off=NET()==='offline';netB.innerHTML=netDot(off);netB.title=off?'No connection – changes are saved on this device and sync when back online':'Connected';netB.style.background=off?'#fde047':'#1d1030';netB.style.color=off?'#1f1300':'#fff'}
+addEventListener('qatnet',paintNet);setInterval(paintNet,2000);paintNet();
 function setStatus(s){ if(!profile)return;
-  const m={synced:'● Synced',syncing:'↻ Syncing…',offline:'⚠ Offline – will retry',idle:'○ Select facility to sync'};
+  const m={synced:'● Synced',syncing:'↻ Syncing…',offline:'⚠ Offline – will retry',idle:'○ Select facility to sync',auth:'🔒 Session expired – tap to sign in'};
   chip.textContent='☁ '+(profile.role==='admin'?'State admin':profile.district)+'  '+(m[s]||s);}
 const ov=document.createElement('div');
 ov.style.cssText='position:fixed;inset:0;z-index:9999;background:#12091f;display:none;align-items:center;justify-content:center;padding:16px;font-family:Calibri,Arial,sans-serif;color:#eee7ff';
@@ -2896,7 +2912,7 @@ function showLogin(msg){
   const go=async()=>{const d=$('clD').value,p=$('clP').value.trim(); if(!d||!p){$('clM').textContent=LT('Choose district and enter password.');return;}
     $('clM').textContent=LT('Signing in…');
     try{const j=await api('login',{district:d,password:p}); if(!j.ok){$('clM').textContent=j.error;return;}
-      token=j.token; origSet.call(localStorage,'nqas_cloud_session',JSON.stringify({token,district:j.district,role:j.role})); start({district:j.district,role:j.role});}
+      token=j.token; origSet.call(localStorage,'nqas_cloud_session',JSON.stringify({token,district:j.district,role:j.role})); start({district:j.district,role:j.role});schedule(500);}
     catch(e){$('clM').textContent=LT('Cannot reach server. Check internet and the API URL.');}};
   $('clB').onclick=go; $('clP').onkeydown=e=>{if(e.key==='Enter')go();}; $('clS').onclick=()=>ov.style.display='none';
   $('clE').onclick=()=>{const p=$('clP'),s=p.type==='password';p.type=s?'text':'password';$('clE').setAttribute('aria-label',s?'Hide password':'Show password');$('clEi').innerHTML=s?'<path d="M17.94 17.94A10.9 10.9 0 0 1 12 19c-7 0-11-7-11-7a19.8 19.8 0 0 1 5.06-5.94M9.9 4.24A10.9 10.9 0 0 1 12 5c7 0 11 7 11 7a19.8 19.8 0 0 1-3.17 4.19M1 1l22 22"/><path d="M14.12 14.12a3 3 0 1 1-4.24-4.24"/>':'<path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/>'};
@@ -2904,20 +2920,17 @@ function showLogin(msg){
   /* language + online/offline toggles */
   const bar=document.createElement('div');bar.id='lgBar';bar.style.cssText='position:absolute;left:0;right:0;top:0;display:flex;justify-content:space-between;align-items:center;padding:calc(12px + env(safe-area-inset-top)) 14px 0;pointer-events:none';
   const pill='display:inline-flex;border:1px solid #6b3a8f;border-radius:999px;overflow:hidden;background:#1d1030;pointer-events:auto';
-  bar.innerHTML='<div id="lgL" style="'+pill+'"><button data-l="en">English</button><button data-l="or">ଓଡ଼ିଆ</button></div><div id="lgN" style="'+pill+'"><button data-n="online">● Online</button><button data-n="offline">○ Offline</button></div>';
+  bar.innerHTML='<div id="lgL" style="'+pill+'"><button data-l="en">English</button><button data-l="or">ଓଡ଼ିଆ</button></div><div id="lgN" style="'+pill+'"><span id="lgNs" style="display:inline-flex;align-items:center;gap:7px;font:700 13px Calibri,Arial,sans-serif;padding:8px 13px;border-radius:999px"></span></div>';
   bar.querySelectorAll('button').forEach(b=>b.style.cssText='border:0;background:transparent;color:#d8c8f0;font:600 13px Calibri,Arial,sans-serif;padding:8px 13px;cursor:pointer;min-height:36px');
   ov.appendChild(bar);
   const mark=(sel,key,val,col)=>bar.querySelectorAll(sel+' button').forEach(b=>{const on=b.dataset[key]===val;b.style.background=on?col:'transparent';b.style.color=on?(col==='#eab308'?'#1f1300':'#fff'):'#d8c8f0'});
   const applyL=()=>{const o=LANG()==='or';ov.querySelectorAll('h2,p,label,option,button,#clM').forEach(e=>{if(e.closest('#lgBar'))return;
       [...e.childNodes].filter(n=>n.nodeType===3&&n.nodeValue.trim()).forEach(n=>{if(!n.__en)n.__en=n.nodeValue;n.nodeValue=o?(OR[n.__en.trim()]||n.__en):n.__en})});
     document.documentElement.lang=o?'or':'en';mark('#lgL','l',LANG(),'#7c3aaa')};
-  const applyN=()=>{const off=NET()==='offline';mark('#lgN','n',NET(),off?'#eab308':'#16a34a');
+  const applyN=()=>{const off=NET()==='offline';const ns=$('lgNs');ns.innerHTML=netDot(off);ns.style.background=off?'#fde047':'transparent';ns.style.color=off?'#1f1300':'#fff';
     ['clD','clP','clB'].forEach(i=>{const e=$(i);e.disabled=off;e.style.opacity=off?.45:1});
     $('clS').style.cssText+=off?';background:#7c3aaa;color:#fff;font-size:14px;padding:11px':';background:;color:;font-size:12px;padding:8px'};
-  bar.querySelectorAll('#lgL button').forEach(b=>b.onclick=()=>{try{localStorage.setItem('qat_lang',b.dataset.l)}catch(e){};applyL()});
-  bar.querySelectorAll('#lgN button').forEach(b=>b.onclick=()=>{try{localStorage.setItem('qat_net',b.dataset.n)}catch(e){};applyN();dispatchEvent(new Event('qatnet'))});
-  window.addEventListener('online',()=>{try{localStorage.setItem('qat_net','online')}catch(e){};applyN()});
-  window.addEventListener('offline',()=>{try{localStorage.setItem('qat_net','offline')}catch(e){};applyN()});
+  bar.querySelectorAll('#lgL button').forEach(b=>b.onclick=()=>{try{localStorage.setItem('qat_lang',b.dataset.l)}catch(e){};applyL();applyN()});
   applyL();applyN();
 }
 const OR={'Quality Assessment Toolkit':'ଗୁଣବତ୍ତା ମୂଲ୍ୟାଙ୍କନ ଟୁଲକିଟ୍','District login':'ଜିଲ୍ଲା ଲଗଇନ୍','District':'ଜିଲ୍ଲା','Select district…':'ଜିଲ୍ଲା ବାଛନ୍ତୁ…','State Admin':'ରାଜ୍ୟ ଆଡମିନ୍','Password':'ପାସୱାର୍ଡ','Sign in':'ସାଇନ୍ ଇନ୍','Continue offline (no cloud sync)':'ଅଫଲାଇନ୍ ଜାରି ରଖନ୍ତୁ (କ୍ଲାଉଡ୍ ସିଙ୍କ୍ ନାହିଁ)','Choose district and enter password.':'ଜିଲ୍ଲା ବାଛନ୍ତୁ ଓ ପାସୱାର୍ଡ ଦିଅନ୍ତୁ।','Signing in…':'ସାଇନ୍ ଇନ୍ ହେଉଛି…','Cannot reach server. Check internet and the API URL.':'ସର୍ଭର୍ ସହ ସଂଯୋଗ ହେଉନାହିଁ। ଇଣ୍ଟରନେଟ୍ ଯାଞ୍ଚ କରନ୍ତୁ।'};
@@ -2928,7 +2941,7 @@ async function signOut(){ if(!confirm('Sign out? Unsynced changes stay on this d
   try{await push();await api('logout',{});}catch(e){} origRem.call(localStorage,'nqas_cloud_session'); location.reload(); }
 
 function start(p){
-  profile=p; ov.style.display='none'; [chip,listBtn,outBtn].forEach(b=>b.style.display='');
+  profile=p; needAuth=false; ov.style.display='none'; [chip,listBtn,outBtn].forEach(b=>b.style.display='');
   if(p.role!=='admin'){
     const sel=$('metaDistrictSel'), o=[...sel.options].find(o=>o.value&&(norm(o.value)===norm(p.district)||norm(o.textContent)===norm(p.district)));
     if(o){sel.value=o.value;sel.dispatchEvent(new Event('change'));} sel.disabled=true;

@@ -28,6 +28,8 @@ The cover shows an illustrated hospital scene. To use your own photos instead, a
 Replace `index.html` (or any file), then change `VERSION` in `sw.js` (e.g. `v2`) and push. Users get an "Update" prompt.
 
 ## Notes
+- Sign-in persists on the device until you tap the ⏻ sign-out button. If the server rejects the saved token, the app stays open and the ☁ chip shows "Session expired – tap to sign in"; local data is kept.
+- The Online (green dot) / Offline (yellow) indicator is automatic: it follows the browser's connection status plus a small check against the host every 15 s.
 - First visit downloads ~24 MB (app + NQAS templates in `data/`); it is cached afterwards.
 - All libraries are bundled in `vendor/`; nothing loads from a CDN.
 - Cloud requests to Google Apps Script are never cached.
