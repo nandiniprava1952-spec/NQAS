@@ -3219,15 +3219,16 @@ var ok=[],n=0;['images/cover-1.jpg','images/cover-2.jpg','images/cover-3.jpg'].f
 
 <style id="badge-css">
 #qatBadge{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(14px + env(safe-area-inset-bottom));z-index:10002;display:none;gap:8px;align-items:center;font-family:Calibri,Arial,sans-serif}
-#qatBadge>*{display:inline-flex;align-items:center;gap:7px;border-radius:999px;font:700 13px Calibri,Arial,sans-serif;padding:9px 14px;min-height:38px;box-shadow:0 4px 14px #0007;border:1px solid #ffffff33;white-space:nowrap}
+#qatNetTop{position:fixed;top:calc(12px + env(safe-area-inset-top));right:14px;z-index:10002;display:none;font-family:Calibri,Arial,sans-serif}
+#qatBadge>*,#qatNetTop>*{display:inline-flex;align-items:center;gap:7px;border-radius:999px;font:700 13px Calibri,Arial,sans-serif;padding:9px 14px;min-height:38px;box-shadow:0 4px 14px #0007;border:1px solid #ffffff33;white-space:nowrap}
 #qbNet{background:#1d1030;color:#fff}#qbNet i{width:11px;height:11px;border-radius:50%;background:#22c55e;box-shadow:0 0 0 3px #22c55e44}
 #qbNet.off{background:#fde047;color:#1f1300}#qbNet.off i{background:#eab308;box-shadow:0 0 0 3px #ca8a0466}
 #qbInst{background:linear-gradient(135deg,#7c3aaa,#4b1f68);color:#fff;cursor:pointer}
 #qbTip{position:fixed;left:12px;right:12px;bottom:calc(64px + env(safe-area-inset-bottom));z-index:10003;max-width:420px;margin:0 auto;background:#fff;color:#2a1740;border-radius:14px;padding:14px 16px;font:14px/1.4 Calibri,Arial,sans-serif;box-shadow:0 8px 28px #000a;display:none}
 </style>
-<div id="qatBadge"><span id="qbNet"><i></i><b id="qbNt">Online</b></span><button type="button" id="qbInst">⬇ <span id="qbIt">Install app</span></button></div><div id="qbTip"></div>
+<div id="qatNetTop"><span id="qbNet"><i></i><b id="qbNt">Online</b></span></div><div id="qatBadge"><button type="button" id="qbInst">⬇ <span id="qbIt">Install app</span></button></div><div id="qbTip"></div>
 <script id="badge-js">
-(function(){var $=function(i){return document.getElementById(i)},B=$('qatBadge'),T=$('qbTip');
+(function(){var $=function(i){return document.getElementById(i)},B=$('qatBadge'),N=$('qatNetTop'),T=$('qbTip');
 var OR={'Online':'ଅନଲାଇନ୍','Offline':'ଅଫଲାଇନ୍','Install app':'ଆପ୍ ଇନଷ୍ଟଲ୍ କରନ୍ତୁ'};
 function lang(){try{return localStorage.getItem('qat_lang')==='or'}catch(e){return false}}
 function tr(s){return lang()?OR[s]:s}
@@ -3237,7 +3238,7 @@ var ios=/iphone|ipad|ipod/i.test(navigator.userAgent)||(navigator.platform==='Ma
 function paint(){var o=off();$('qbNet').className=o?'off':'';$('qbNt').textContent=tr(o?'Offline':'Online');$('qbIt').textContent=tr('Install app');
  $('qbInst').style.display=sa()?'none':'inline-flex';
  var c=$('cover'),cv=c&&c.style.display!=='none',lg=$('clB'),lv=lg&&lg.offsetParent!==null&&lg.closest('div[style*="z-index:9999"]')&&lg.closest('div[style*="z-index:9999"]').style.display!=='none';
- B.style.display=(cv||lv)?'flex':'none';if(!(cv||lv))T.style.display='none'}
+ B.style.display=(cv||lv)?'flex':'none';N.style.display=(cv||lv)?'block':'none';if(!(cv||lv))T.style.display='none'}
 ['online','offline','qatnet','appinstalled','focus'].forEach(function(e){addEventListener(e,function(){setTimeout(paint,50)})});
 addEventListener('appinstalled',function(){window.__dp=null;T.style.display='none'});
 setInterval(paint,600);paint();
