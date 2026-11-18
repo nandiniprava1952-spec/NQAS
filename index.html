@@ -673,6 +673,10 @@ button,select,input,textarea{touch-action:manipulation}input,select,textarea{fon
 @keyframes qu-spin{to{transform:rotate(270deg)}}
 @media (prefers-reduced-motion:reduce){#qatUpd.qu-install svg{animation-duration:2.4s}}
 </style>
+<style id="assess-type-row">
+  .assess-type-row select{display:block;width:100%;max-width:420px;padding:9px 10px;border-radius:8px;border:1px solid rgba(255,255,255,.5);background:#fff;color:var(--brand-900);font-family:var(--sans);font-size:14px;font-weight:600;}
+  .qat-fac-name{color:#ff8a1f !important;font-weight:800;}
+</style>
 </head>
 <body>
 <div class="topbar">
@@ -686,6 +690,19 @@ button,select,input,textarea{touch-action:manipulation}input,select,textarea{fon
       <div class="toolbar"></div>
     </div>
     <div class="comp-switch" id="compSwitch"><button type="button" class="comp on" id="compNQAS">NQAS</button><button type="button" class="comp" id="compKK">Kayakalp</button><button type="button" class="comp" id="compHome" title="Cover page">⌂ Home</button></div>
+    <div class="assess-type-row" style="margin-top:12px;display:block;width:100%;">
+      <label for="metaAssessmentType" style="font-size:12.5px;opacity:.9;display:block;width:100%;margin:0 0 4px 0;">Assessment type</label>
+      <select id="metaAssessmentType" aria-label="Select Assessment Type">
+        <option value="">Assessment type…</option>
+        <option value="Self">Self</option>
+        <option value="Internal Assessment 1">Internal Assessment 1</option>
+        <option value="Internal Assessment 2">Internal Assessment 2</option>
+        <option value="Internal Assessment 3">Internal Assessment 3</option>
+        <option value="Peer">Peer</option>
+        <option value="District">District</option>
+        <option value="State">State</option>
+      </select>
+    </div>
     <div class="facility-select-row" style="margin-top:12px;display:block !important;width:100%;">
       <label for="facilityDropdown" style="font-size:12.5px;opacity:.9;display:block !important;width:100%;margin:0 0 4px 0;">Facility type</label>
       <select id="facilityDropdown" aria-label="Select Facility Type" style="display:block !important;width:100% !important;max-width:420px;padding:9px 10px;border-radius:8px;border:1px solid rgba(255,255,255,.5);background:#fff;color:var(--brand-900);font-family:var(--sans);font-size:14px;font-weight:600;"><option value="">Select Facility Type</option></select>
@@ -697,16 +714,6 @@ button,select,input,textarea{touch-action:manipulation}input,select,textarea{fon
       <select id="metaBlockSel" disabled><option value="">Block…</option></select>
       <input type="text" id="metaFacilitySel" list="metaFacilityList" placeholder="Facility / Sub-centre… (type to search)" autocomplete="off" disabled>
       <datalist id="metaFacilityList"></datalist>
-      <select id="metaAssessmentType">
-        <option value="">Assessment type…</option>
-        <option value="Self">Self</option>
-        <option value="Internal Assessment 1">Internal Assessment 1</option>
-        <option value="Internal Assessment 2">Internal Assessment 2</option>
-        <option value="Internal Assessment 3">Internal Assessment 3</option>
-        <option value="Peer">Peer</option>
-        <option value="District">District</option>
-        <option value="State">State</option>
-      </select>
       <input type="text" id="metaAssessor1" placeholder="Assessor 1 name">
       <input type="text" id="metaDesig1" placeholder="Assessor 1 designation">
       <input type="text" id="metaAssessor2" placeholder="Assessor 2 name">
@@ -2854,7 +2861,7 @@ window.addEventListener('qatcontent',function(){try{if(cur)render()}catch(e){}})
 const nq=document.querySelector('.page-nav');nq.parentNode.insertBefore(nv,nq.nextSibling);}
 document.querySelectorAll('#kkNav .page-tab').forEach(b=>b.onclick=()=>{document.querySelectorAll('#kkNav .page-tab').forEach(x=>x.classList.remove('active'));document.querySelectorAll('#kayakalpPage .kk-v').forEach(x=>x.classList.remove('on'));b.classList.add('active');$(b.dataset.v).classList.add('on');if(b.dataset.v==='kkV2')summary()});
 $('kkType').onchange=function(){persist();cur=this.value;key='';A={};if(cur)loadKey(mk(),false);render();persist();touch()};
-const mr=document.querySelector('.meta-row');mr.addEventListener('change',()=>{if(applying)return;if(!suggest())idChange();persist()});
+document.querySelectorAll('.meta-row,.assess-type-row').forEach(mr=>mr.addEventListener('change',()=>{if(applying)return;if(!suggest())idChange();persist()}));
 $('metaFacilitySel').addEventListener('input',()=>{if(applying)return;if(!fRaw()||$('metaFacilityName').value){if(!suggest())idChange();persist()}});
 $('kkReset').onclick=()=>{if(cur&&confirm('Clear all Kayakalp answers for this checklist and facility?')){A={};persist();render()}};
 /* Excel */
@@ -2983,14 +2990,17 @@ const sbar=document.getElementById('qatStR')||tb;
 function mkBtn(t,fn,host){const b=document.createElement('button');b.className='btn';b.textContent=t;b.onclick=fn;b.style.display='none';(host||tb).appendChild(b);return b;}
 const chip=mkBtn('☁',()=>needAuth?showLogin('Session expired – sign in to resume cloud sync.'):push(),sbar), listBtn=mkBtn('Saved assessments',openList,document.querySelector('#nqasActions .kk-row')||tb), outBtn=mkBtn('⏻ Sign out',signOut,sbar);
 outBtn.title='Sign out';outBtn.setAttribute('aria-label','Sign out');outBtn.style.cssText+=';font-size:13px;font-weight:700;padding:6px 11px';
-const netB=document.createElement('span');netB.id='qatNet';netB.setAttribute('role','status');netB.style.cssText='display:inline-flex;align-items:center;gap:7px;font:700 13px Calibri,Arial,sans-serif;padding:6px 12px;border-radius:999px;border:1px solid #ffffff33;white-space:nowrap';
+const netB=document.createElement('span');netB.id='qatNet';netB.setAttribute('role','status');netB.style.cssText='display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;padding:0;border-radius:50%;border:1px solid #ffffff33;flex:none';
 const grp=document.createElement('span');grp.style.cssText='display:inline-flex;gap:6px;align-items:center';grp.append(netB,outBtn);sbar.appendChild(grp);
-function netDot(off){const o=LANG()==='or';return '<i style="width:10px;height:10px;border-radius:50%;flex:none;background:'+(off?'#a16207':'#22c55e')+';box-shadow:0 0 0 3px '+(off?'#a1620744':'#22c55e55')+'"></i>'+(off?(o?'ଅଫଲାଇନ୍':'Offline'):(o?'ଅନଲାଇନ୍':'Online'));}
-function paintNet(){const off=NET()==='offline';netB.innerHTML=netDot(off);netB.title=off?'No connection – changes are saved on this device and sync when back online':'Connected';netB.style.background=off?'#fde047':'#1d1030';netB.style.color=off?'#1f1300':'#fff'}
+function netDot(off){return off?'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="1" y1="1" x2="23" y2="23"/><path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55"/><path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39"/><path d="M10.71 5.05A16 16 0 0 1 22.58 9"/><path d="M1.42 9a15.91 15.91 0 0 1 4.7-2.88"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>':'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>';}
+function netTxt(off){const o=LANG()==='or';return off?(o?'ଅଫଲାଇନ୍':'Offline'):(o?'ଅନଲାଇନ୍':'Online');}
+function paintNet(){const off=NET()==='offline';netB.innerHTML=netDot(off);netB.title=off?'No connection – changes are saved on this device and sync when back online':'Connected';netB.setAttribute('aria-label',netTxt(off));netB.style.background=off?'#fde047':'#1d1030';netB.style.color=off?'#1f1300':'#22c55e'}
 addEventListener('qatnet',paintNet);setInterval(paintNet,2000);paintNet();
 function setStatus(s){ if(!profile)return;
   const m={synced:'● Synced',syncing:'↻ Syncing…',offline:'⚠ Offline – will retry',idle:'○ Select facility to sync',auth:'🔒 Session expired – tap to sign in'};
-  chip.textContent='☁ '+(profile.role==='admin'?'State admin':profile.role==='block'?profile.block+' (Block)':profile.role==='facility'?profile.facility:profile.district)+'  '+(m[s]||s);}
+  const nm=(profile.role==='admin'?'State admin':profile.role==='block'?profile.block+' (Block)':profile.role==='facility'?profile.facility:profile.district);
+  const esc2=x=>String(x==null?'':x).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  chip.innerHTML='☁ <span class="qat-fac-name no-i18n">'+esc2(nm)+'</span>  '+esc2(m[s]||s);}
 const ov=document.createElement('div');
 ov.style.cssText='position:fixed;inset:0;z-index:9999;background:#12091f;display:none;align-items:center;justify-content:center;padding:16px;font-family:Calibri,Arial,sans-serif;color:#eee7ff';
 document.body.appendChild(ov);
@@ -3023,13 +3033,13 @@ function showLogin(msg){
   window.addEventListener('qatnet',()=>{if(document.getElementById('lgBar')&&document.getElementById('clS'))applyN()});
   /* language + online/offline toggles */
   const bar=document.createElement('div');bar.id='lgBar';bar.style.cssText='position:absolute;left:0;right:0;top:0;display:flex;justify-content:space-between;align-items:center;padding:calc(12px + env(safe-area-inset-top)) 14px 0;pointer-events:none';
-  const pill='display:inline-flex;border:1px solid #6b3a8f;border-radius:999px;overflow:hidden;background:#1d1030;pointer-events:auto';
-  bar.innerHTML='<div id="lgL" class="qat-lg no-i18n" style="margin:0;pointer-events:auto"><button data-l="en">English</button><button data-l="or">ଓଡ଼ିଆ</button></div><div id="lgN" style="'+pill+'"><span id="lgNs" style="display:inline-flex;align-items:center;gap:7px;font:700 13px Calibri,Arial,sans-serif;padding:8px 13px;border-radius:999px"></span></div>';
+  const pill='display:inline-flex;border:1px solid #6b3a8f;border-radius:50%;overflow:hidden;background:#1d1030;pointer-events:auto';
+  bar.innerHTML='<div id="lgL" class="qat-lg no-i18n" style="margin:0;pointer-events:auto"><button type="button">'+(window.QAT_I18N&&QAT_I18N.globe||'')+'<span class="qat-lg-t"></span></button></div><div id="lgN" style="'+pill+'"><span id="lgNs" style="display:inline-flex;align-items:center;gap:7px;font:700 13px Calibri,Arial,sans-serif;width:36px;height:36px;padding:0;justify-content:center;border-radius:50%"></span></div>';
   bar.querySelectorAll('#lgN button').forEach(b=>b.style.cssText='border:0;background:transparent;color:#d8c8f0;font:600 13px Calibri,Arial,sans-serif;padding:8px 13px;cursor:pointer;min-height:36px');
   ov.appendChild(bar);
   const mark=(sel,key,val,col)=>bar.querySelectorAll(sel+' button').forEach(b=>{const on=b.dataset[key]===val;b.style.background=on?col:'transparent';b.style.color=on?(col==='#eab308'?'#1f1300':'#fff'):'#d8c8f0'});
-  const applyL=()=>{const l=LANG(),g=$('lgL');g.dataset.lang=l;g.querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.l===l))};
-  const applyN=()=>{const off=NET()==='offline';const ns=$('lgNs');ns.innerHTML=netDot(off);ns.style.background=off?'#fde047':'transparent';ns.style.color=off?'#1f1300':'#fff';
+  const applyL=()=>{const l=LANG(),g=$('lgL'),s=g.querySelector('.qat-lg-t');g.dataset.lang=l;s.textContent=l==='or'?'English':'ଓଡ଼ିଆ';s.setAttribute('lang',l==='or'?'en':'or');g.title=l==='or'?'Switch to English':'ଓଡ଼ିଆକୁ ବଦଳାନ୍ତୁ'};
+  const applyN=()=>{const off=NET()==='offline';const ns=$('lgNs');ns.innerHTML=netDot(off);ns.style.background=off?'#fde047':'transparent';ns.style.color=off?'#1f1300':'#22c55e';ns.setAttribute('aria-label',netTxt(off));ns.title=netTxt(off);
     ['clD','clBk','clFc','clP','clB'].forEach(i=>{const e=$(i);e.disabled=off;e.style.opacity=off?.45:1});
     $('clS').style.cssText+=off?';background:#7c3aaa;color:#fff;font-size:14px;padding:11px':';background:;color:;font-size:12px;padding:8px'};
   $('lgL').onclick=()=>{const n=LANG()==='or'?'en':'or';try{QAT_I18N.set(n)}catch(e){try{localStorage.setItem('qat_lang',n)}catch(_){}};applyL();applyN()};
@@ -3129,7 +3139,7 @@ function openRec(r){
 
 /* ---------- wiring ---------- */
 setInterval(()=>{ if(!profile||applying)return; const id=ident(), k=id?JSON.stringify(id):''; if(k!==lastKey){lastKey=k; id?pull(id):setStatus('idle');} },1500);
-['.meta-row','#generalDetailsPage','.app-page'].forEach(s=>document.querySelectorAll(s).forEach(el=>el.addEventListener('change',()=>{if(profile&&!applying)schedule();})));
+['.meta-row','.assess-type-row','#generalDetailsPage','.app-page'].forEach(s=>document.querySelectorAll(s).forEach(el=>el.addEventListener('change',()=>{if(profile&&!applying)schedule();})));
 addEventListener('online',()=>schedule(500));
 addEventListener('pagehide',()=>{if(profile&&ident()){clearTimeout(timer);push();}});
 

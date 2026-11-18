@@ -469,20 +469,25 @@
   var CSS = '.or-sub{display:block;margin-top:3px;font-weight:500;font-size:.94em;line-height:1.55;color:#d9b8ff;opacity:.95}' +
     'html[lang=or] body,html[lang=or] button,html[lang=or] select,html[lang=or] input,html[lang=or] textarea{font-family:"Noto Sans Oriya","Noto Sans Odia","Oriya Sangam MN","Kalinga","Nirmala UI",Calibri,Arial,sans-serif}' +
     'html[lang=or] .or-sub,.or-sub{font-family:"Noto Sans Oriya","Noto Sans Odia","Oriya Sangam MN","Kalinga","Nirmala UI",sans-serif}' +
-    '.qat-lg{position:relative;display:inline-flex;border:1px solid #6b3a8f;border-radius:999px;overflow:hidden;background:#1d1030;vertical-align:middle;margin-left:8px;cursor:pointer;user-select:none;-webkit-user-select:none}' +
-    '.qat-lg::before{content:"";position:absolute;top:2px;bottom:2px;left:2px;width:calc(50% - 2px);border-radius:999px;background:#7c3aaa;transition:transform .22s ease}' +
-    '.qat-lg[data-lang=or]::before{transform:translateX(100%)}' +
-    '.qat-lg button{position:relative;z-index:1;flex:1 1 0;min-width:80px;border:0;background:transparent;color:#d8c8f0;font:600 13px Calibri,Arial,sans-serif;padding:7px 12px;cursor:pointer;min-height:34px;transition:color .2s}' +
-    '.qat-lg button.on{color:#fff}' +
-    '#cover .qat-lg{position:absolute;top:calc(12px + env(safe-area-inset-top));right:14px;z-index:5;margin:0}';
+    '.qat-lg{position:relative;display:inline-flex;vertical-align:middle;margin-left:8px;cursor:pointer;user-select:none;-webkit-user-select:none}' +
+    '.qat-lg button{display:inline-flex;align-items:center;gap:7px;border:1px solid #6b3a8f;border-radius:999px;background:#1d1030;color:#fff;font-weight:600;font-size:13px;font-family:Calibri,Arial,"Noto Sans Oriya","Noto Sans Odia","Oriya Sangam MN","Kalinga","Nirmala UI",sans-serif;padding:6px 14px;min-height:34px;cursor:pointer;white-space:nowrap;transition:background .2s}' +
+    '.qat-lg button:hover{background:#2a1745}' +
+    '.qat-lg svg{flex:none}' +
+    '#cover .qat-lg{position:absolute;top:calc(12px + env(safe-area-inset-top));left:14px;z-index:5;margin:0}';
+  /* single button: shows the language you would switch TO (English <-> ଓଡ଼ିଆ) */
   function paintToggles() {
-    document.querySelectorAll('.qat-lg').forEach(function (g) { g.setAttribute('data-lang', lang); g.setAttribute('title', lang === 'or' ? 'Switch to English' : 'ଓଡ଼ିଆକୁ ବଦଳାନ୍ତୁ'); });
-    document.querySelectorAll('.qat-lg button').forEach(function (b) { b.classList.toggle('on', b.dataset.l === lang); b.setAttribute('aria-pressed', b.dataset.l === lang ? 'true' : 'false'); });
+    var label = lang === 'or' ? 'Switch to English' : 'ଓଡ଼ିଆକୁ ବଦଳାନ୍ତୁ';
+    document.querySelectorAll('.qat-lg').forEach(function (g) {
+      g.setAttribute('data-lang', lang); g.setAttribute('title', label);
+      var b = g.querySelector('button'); if (b) b.setAttribute('aria-label', label);
+      var s = g.querySelector('.qat-lg-t'); if (s) { s.textContent = lang === 'or' ? 'English' : 'ଓଡ଼ିଆ'; s.setAttribute('lang', lang === 'or' ? 'en' : 'or'); }
+    });
   }
+  var GLOBE = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>';
   function makeToggle() {
     var d = document.createElement('div'); d.className = 'qat-lg no-i18n'; d.setAttribute('role', 'group'); d.setAttribute('aria-label', 'Language');
-    d.innerHTML = '<button type="button" data-l="en">English</button><button type="button" data-l="or" lang="or">ଓଡ଼ିଆ</button>';
-    /* one switch: a tap anywhere on it flips to the other language */
+    d.innerHTML = '<button type="button">' + GLOBE + '<span class="qat-lg-t"></span></button>';
+    /* one tap flips to the other language */
     d.addEventListener('click', function () { setLang(lang === 'or' ? 'en' : 'or'); });
     return d;
   }
@@ -509,7 +514,7 @@
     try { window.dispatchEvent(new CustomEvent('qatlang', { detail: l })); } catch (e) { }
   }
 
-  window.QAT_I18N = { tr: tr, TC: TC, oriya: oriya, set: setLang, get: function () { return lang; }, UI: UI, stats: function () { return { ui: Object.keys(UI).length, content: contentCount }; } };
+  window.QAT_I18N = { globe: GLOBE, tr: tr, TC: TC, oriya: oriya, set: setLang, get: function () { return lang; }, UI: UI, stats: function () { return { ui: Object.keys(UI).length, content: contentCount }; } };
   window.TC = TC;                // used by the checklist renderers in index.html
   window.LT = function (s) { return lang === 'or' ? tr(s) : s; };
 
