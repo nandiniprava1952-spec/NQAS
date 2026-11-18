@@ -469,17 +469,21 @@
   var CSS = '.or-sub{display:block;margin-top:3px;font-weight:500;font-size:.94em;line-height:1.55;color:#d9b8ff;opacity:.95}' +
     'html[lang=or] body,html[lang=or] button,html[lang=or] select,html[lang=or] input,html[lang=or] textarea{font-family:"Noto Sans Oriya","Noto Sans Odia","Oriya Sangam MN","Kalinga","Nirmala UI",Calibri,Arial,sans-serif}' +
     'html[lang=or] .or-sub,.or-sub{font-family:"Noto Sans Oriya","Noto Sans Odia","Oriya Sangam MN","Kalinga","Nirmala UI",sans-serif}' +
-    '.qat-lg{display:inline-flex;border:1px solid #6b3a8f;border-radius:999px;overflow:hidden;background:#1d1030;vertical-align:middle;margin-left:8px}' +
-    '.qat-lg button{border:0;background:transparent;color:#d8c8f0;font:600 13px Calibri,Arial,sans-serif;padding:7px 12px;cursor:pointer;min-height:34px}' +
-    '.qat-lg button.on{background:#7c3aaa;color:#fff}' +
+    '.qat-lg{position:relative;display:inline-flex;border:1px solid #6b3a8f;border-radius:999px;overflow:hidden;background:#1d1030;vertical-align:middle;margin-left:8px;cursor:pointer;user-select:none;-webkit-user-select:none}' +
+    '.qat-lg::before{content:"";position:absolute;top:2px;bottom:2px;left:2px;width:calc(50% - 2px);border-radius:999px;background:#7c3aaa;transition:transform .22s ease}' +
+    '.qat-lg[data-lang=or]::before{transform:translateX(100%)}' +
+    '.qat-lg button{position:relative;z-index:1;flex:1 1 0;min-width:80px;border:0;background:transparent;color:#d8c8f0;font:600 13px Calibri,Arial,sans-serif;padding:7px 12px;cursor:pointer;min-height:34px;transition:color .2s}' +
+    '.qat-lg button.on{color:#fff}' +
     '#cover .qat-lg{position:absolute;top:calc(12px + env(safe-area-inset-top));right:14px;z-index:5;margin:0}';
   function paintToggles() {
-    document.querySelectorAll('.qat-lg button').forEach(function (b) { b.classList.toggle('on', b.dataset.l === lang); });
+    document.querySelectorAll('.qat-lg').forEach(function (g) { g.setAttribute('data-lang', lang); g.setAttribute('title', lang === 'or' ? 'Switch to English' : 'ଓଡ଼ିଆକୁ ବଦଳାନ୍ତୁ'); });
+    document.querySelectorAll('.qat-lg button').forEach(function (b) { b.classList.toggle('on', b.dataset.l === lang); b.setAttribute('aria-pressed', b.dataset.l === lang ? 'true' : 'false'); });
   }
   function makeToggle() {
     var d = document.createElement('div'); d.className = 'qat-lg no-i18n'; d.setAttribute('role', 'group'); d.setAttribute('aria-label', 'Language');
     d.innerHTML = '<button type="button" data-l="en">English</button><button type="button" data-l="or" lang="or">ଓଡ଼ିଆ</button>';
-    d.addEventListener('click', function (e) { var b = e.target.closest('button[data-l]'); if (b) setLang(b.dataset.l); });
+    /* one switch: a tap anywhere on it flips to the other language */
+    d.addEventListener('click', function () { setLang(lang === 'or' ? 'en' : 'or'); });
     return d;
   }
   function mountToggles() {

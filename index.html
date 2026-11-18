@@ -3024,15 +3024,15 @@ function showLogin(msg){
   /* language + online/offline toggles */
   const bar=document.createElement('div');bar.id='lgBar';bar.style.cssText='position:absolute;left:0;right:0;top:0;display:flex;justify-content:space-between;align-items:center;padding:calc(12px + env(safe-area-inset-top)) 14px 0;pointer-events:none';
   const pill='display:inline-flex;border:1px solid #6b3a8f;border-radius:999px;overflow:hidden;background:#1d1030;pointer-events:auto';
-  bar.innerHTML='<div id="lgL" style="'+pill+'"><button data-l="en">English</button><button data-l="or">ଓଡ଼ିଆ</button></div><div id="lgN" style="'+pill+'"><span id="lgNs" style="display:inline-flex;align-items:center;gap:7px;font:700 13px Calibri,Arial,sans-serif;padding:8px 13px;border-radius:999px"></span></div>';
-  bar.querySelectorAll('button').forEach(b=>b.style.cssText='border:0;background:transparent;color:#d8c8f0;font:600 13px Calibri,Arial,sans-serif;padding:8px 13px;cursor:pointer;min-height:36px');
+  bar.innerHTML='<div id="lgL" class="qat-lg no-i18n" style="margin:0;pointer-events:auto"><button data-l="en">English</button><button data-l="or">ଓଡ଼ିଆ</button></div><div id="lgN" style="'+pill+'"><span id="lgNs" style="display:inline-flex;align-items:center;gap:7px;font:700 13px Calibri,Arial,sans-serif;padding:8px 13px;border-radius:999px"></span></div>';
+  bar.querySelectorAll('#lgN button').forEach(b=>b.style.cssText='border:0;background:transparent;color:#d8c8f0;font:600 13px Calibri,Arial,sans-serif;padding:8px 13px;cursor:pointer;min-height:36px');
   ov.appendChild(bar);
   const mark=(sel,key,val,col)=>bar.querySelectorAll(sel+' button').forEach(b=>{const on=b.dataset[key]===val;b.style.background=on?col:'transparent';b.style.color=on?(col==='#eab308'?'#1f1300':'#fff'):'#d8c8f0'});
-  const applyL=()=>{mark('#lgL','l',LANG(),'#7c3aaa')};
+  const applyL=()=>{const l=LANG(),g=$('lgL');g.dataset.lang=l;g.querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.l===l))};
   const applyN=()=>{const off=NET()==='offline';const ns=$('lgNs');ns.innerHTML=netDot(off);ns.style.background=off?'#fde047':'transparent';ns.style.color=off?'#1f1300':'#fff';
     ['clD','clBk','clFc','clP','clB'].forEach(i=>{const e=$(i);e.disabled=off;e.style.opacity=off?.45:1});
     $('clS').style.cssText+=off?';background:#7c3aaa;color:#fff;font-size:14px;padding:11px':';background:;color:;font-size:12px;padding:8px'};
-  bar.querySelectorAll('#lgL button').forEach(b=>b.onclick=()=>{try{QAT_I18N.set(b.dataset.l)}catch(e){try{localStorage.setItem('qat_lang',b.dataset.l)}catch(_){}};applyL();applyN()});
+  $('lgL').onclick=()=>{const n=LANG()==='or'?'en':'or';try{QAT_I18N.set(n)}catch(e){try{localStorage.setItem('qat_lang',n)}catch(_){}};applyL();applyN()};
   window.addEventListener('qatlang',()=>{applyL();applyN()});
   applyL();applyN();ready=true;
 }
