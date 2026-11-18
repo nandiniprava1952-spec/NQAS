@@ -472,8 +472,9 @@
     return d;
   }
   function mountToggles() {
-    var sw = document.getElementById('compSwitch');
-    if (sw && !sw.parentNode.querySelector('.qat-lg')) sw.insertAdjacentElement('afterend', makeToggle());
+    var sl = document.getElementById('qatStL'), sw = document.getElementById('compSwitch');
+    if (sl) { if (!sl.querySelector('.qat-lg')) sl.appendChild(makeToggle()); }
+    else if (sw && !sw.parentNode.querySelector('.qat-lg')) sw.insertAdjacentElement('afterend', makeToggle());
     var cv = document.getElementById('cover');
     if (cv && !cv.querySelector('.qat-lg')) cv.appendChild(makeToggle());
     paintToggles();
