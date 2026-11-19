@@ -251,7 +251,7 @@
   function inPath(f) {
     return (S.path.length < 1 || nz(f.district) === nz(S.path[0])) && (S.path.length < 2 || nz(f.block) === nz(S.path[1]));
   }
-  function pending() { return S.rows.filter(function (r) { return (S.fw === 'k' ? isKK(r) : !isKK(r)) && !r.summary; }).length; }
+  function pending() { return latestCopies(S.rows).filter(function (r) { return (S.fw === 'k' ? isKK(r) : !isKK(r)) && !r.summary; }).length; }   /* counts only the copies the dashboard shows */
 
   function paint() {
     if (!ov) return;
@@ -395,7 +395,7 @@
   /* fill the score summary of records saved before the dashboard existed (pull each record, score it, store only the summary) */
   async function backfill(auto) {   /* auto = runs by itself after the list loads; records that failed once are not retried until the next full open */
     S.bfSkip = S.bfSkip || {};
-    var todo = S.rows.filter(function (r) { return (S.fw === 'k' ? isKK(r) : !isKK(r)) && !r.summary && !(auto && S.bfSkip[r.key]); });
+    var todo = latestCopies(S.rows).filter(function (r) { return (S.fw === 'k' ? isKK(r) : !isKK(r)) && !r.summary && !(auto && S.bfSkip[r.key]); });
     if (!todo.length || S.bf) return;
     S.bf = { n: todo.length, done: 0, fail: 0, stop: false }; paint();
     var i = 0, bf = S.bf;
