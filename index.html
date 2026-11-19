@@ -3323,7 +3323,13 @@ async function openRec(r){
 }
 
 /* ---------- dashboard hooks (dashboard.js) ---------- */
-window.qatCloud={api:(a,p)=>api(a,p),profile:()=>profile,openRec,nSum};
+/* after a record is deleted from the dashboard: if this device is still showing it, blank the screen so the sync loop cannot save it back */
+function forget(r){ try{ const id=profile?ident():null; if(!id||id.facility_type!==r.facility_type||norm(id.district)!==norm(r.district)||norm(id.facility_name)!==norm(r.facility_name)||norm(id.assessment_type)!==norm(r.assessment_type))return;
+  if(id.start_date&&r.start_date&&id.start_date!==r.start_date)return;
+  clearTimeout(timer); startBlank(id); applying=true;
+  try{['metaAssessmentType','gdAssessmentType','metaStartDate','gdStartDate'].forEach(i=>{const e=$(i);if(e)e.value='';}); const at=$('metaAssessmentType'); if(at)at.dispatchEvent(new Event('change',{bubbles:true}));}finally{applying=false;}
+  dirty=false; clearTimeout(timer); const n=ident(); lastKey=n?JSON.stringify(n):''; }catch(e){} }
+window.qatCloud={api:(a,p)=>api(a,p),profile:()=>profile,openRec,nSum,forget};
 const dashB=$('compDash');if(dashB)dashB.onclick=()=>{if(window.qatDashboard)window.qatDashboard.open();};
 
 /* ---------- wiring ---------- */

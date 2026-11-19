@@ -137,12 +137,13 @@
   }
 /* one assessment (facility + type + date) can exist as several saved copies (older app versions, date added later): show only the latest saved copy */
   function latestCopies(rows) {
-    var best = {}, order = [];
+    var best = {}, order = [], all = {};
     rows.forEach(function (r) {
       var k = [nz(r.district), nz(r.facility_type), nz(r.facility_name), nz(r.assessment_type), r.start_date || r.end_date || ''].join('|');
+      (all[k] = all[k] || []).push(r.key);
       if (!best[k]) { best[k] = r; order.push(k); } else if (String(r.updated_at) > String(best[k].updated_at)) best[k] = r;
     });
-    return order.map(function (k) { return best[k]; });
+    return order.map(function (k) { best[k]._all = all[k]; return best[k]; });
   }
   function derive() {
     var out = [], k3 = {}, k2 = {}, ex = {};
@@ -258,7 +259,7 @@
     var h = '';
     var ats = '<option value="">All assessment types</option>' + AT.map(function (t) { return '<option' + (S.at === t ? ' selected' : '') + ' value="' + e(t) + '">' + e(t) + '</option>'; }).join('');
     h += '<div class="qd-top"><h2>Dashboard<small class="no-i18n">' + e(scopeLabel()) + '</small></h2>' +
-      '<button class="qd-b" data-act="refresh"' + (S.bf ? ' disabled' : '') + '>Refresh</button><button class="qd-b" data-act="csv"' + (S.loaded ? '' : ' disabled') + '>Export CSV</button><button class="qd-b p" data-act="close" id="qdClose">Close</button></div>' +
+      '<button class="qd-b" data-act="refresh"' + (S.bf ? ' disabled' : '') + '>Refresh</button><button class="qd-b" data-act="xlsx"' + (S.loaded ? '' : ' disabled') + '>Export XLSX</button><button class="qd-b p" data-act="close" id="qdClose">Close</button></div>' +
       '<div class="qd-seg" role="group" aria-label="Framework"><button data-act="fw" data-v="n" aria-pressed="' + (S.fw === 'n') + '">NQAS</button><button data-act="fw" data-v="k" aria-pressed="' + (S.fw === 'k') + '">Kayakalp</button></div>';
     if (!S.loaded) {
       h += S.err ? '<div class="qd-n err"><span>' + e(S.err) + '</span><button class="qd-b" data-act="refresh">Try again</button></div>' : '<div class="qd-e">Loading assessments…</div>';
@@ -338,12 +339,12 @@
       var i = S.rows.indexOf(r);
       return '<div class="qd-r"><div><b>' + e(r.assessment_type || '—') + '</b><span class="qd-sub">' + e(dt || 'No dates') + (r.assessors ? ' · ' + e(r.assessors) : '') + '</span><span class="qd-sub">Saved ' + dtm(r.updated_at) + (r.updated_by ? ' by ' + e(r.updated_by) : '') + '</span></div>' +
         '<div><span class="qd-ch ' + band(p) + '"><b style="font-size:16px">' + pc(p) + '</b></span>' + (sm && sm.t ? '<span class="qd-sub" style="display:inline">' + sm.n + ' of ' + sm.t + ' answered</span><br>' : '<br>') + chips + '</div>' +
-        '<div><button class="qd-b" data-act="open" data-v="' + i + '">Open</button></div></div>';
+        '<div><button class="qd-b" data-act="open" data-v="' + i + '">Open</button>' + (prof().role === 'facility' ? '' : '<br><button class="qd-b" data-act="del" data-v="' + i + '" style="margin-top:8px;color:#fb7185;border-color:#fb718566">Delete</button>') + '</div></div>';
     }).join('');
   }
 
-  /* ---------- CSV ---------- */
-  function csv() {
+  /* ---------- XLSX ---------- */
+  function xlsx() {
     var fs = derive().filter(inPath), ak = {}, rows = [];
     fs.forEach(function (f) { f.recs.forEach(function (r) { var ar = r.summary && r.summary[areaKey()]; if (ar) Object.keys(ar).forEach(function (k) { ak[k] = 1; }); }); });
     var keys = Object.keys(ak).sort();
@@ -353,14 +354,29 @@
     fs.forEach(function (f) {
       var sm = f.latest && f.latest.summary, ar = (sm && sm[areaKey()]) || {};
       var byT = {}; f.recs.forEach(function (r) { if (!(r.assessment_type in byT)) byT[r.assessment_type] = r; });
-      rows.push([f.district, f.block, f.name, f.gt, { none: 'Not started', started: 'Started', scored: 'Scored' }[f.st], f.recs.length, f.latest ? f.latest.assessment_type : '', f.latest ? f.latest.updated_at : '',
+      rows.push([f.district, f.block, f.name, f.gt, { none: 'Not started', started: 'Started', scored: 'Scored' }[f.st], f.recs.length, f.latest ? f.latest.assessment_type : '', f.latest ? dtm(f.latest.updated_at) : '',
         f.comp != null ? Math.round(f.comp * 100) : '', f.score != null ? r1(f.score) : ''].concat(keys.map(function (k) { return ar[k] != null ? r1(ar[k]) : ''; }))
         .concat(AT.map(function (t) { var r = byT[t], s = r && r.summary; return s && s.n > 0 ? r1(s.p) : ''; })));
     });
-    var txt = '\ufeff' + rows.map(function (r) { return r.map(function (c) { c = String(c == null ? '' : c); return /[",\n]/.test(c) ? '"' + c.replace(/"/g, '""') + '"' : c; }).join(','); }).join('\r\n');
-    var a = document.createElement('a'), u = URL.createObjectURL(new Blob([txt], { type: 'text/csv;charset=utf-8' }));
-    a.href = u; a.download = 'dashboard-' + (S.fw === 'n' ? 'nqas' : 'kayakalp') + '-' + new Date().toISOString().slice(0, 10) + '.csv';
-    document.body.appendChild(a); a.click(); a.remove(); setTimeout(function () { URL.revokeObjectURL(u); }, 2000);
+    if (typeof XLSX === 'undefined') { if (typeof qatToast === 'function') qatToast('Excel library not loaded - reload the app and try again', 'warn'); return; }
+    var recRows = [['District', 'Block', 'Facility', 'Facility type', 'Assessment', 'Start date', 'End date', 'Assessors', 'Last saved', 'Saved by', 'Answered', 'Total checkpoints', 'Answered %', 'Score %']];
+    fs.forEach(function (f) {
+      f.recs.slice().sort(function (a, b) { return rank(a.assessment_type) - rank(b.assessment_type) || (a.updated_at < b.updated_at ? 1 : -1); }).forEach(function (r) {
+        var sm = r.summary;
+        recRows.push([f.district, f.block, f.name, f.gt, r.assessment_type || '', dmy(r.start_date), dmy(r.end_date), r.assessors || '', dtm(r.updated_at), r.updated_by || '',
+          sm && sm.n != null ? sm.n : '', sm && sm.t ? sm.t : '', sm && sm.t ? Math.round(sm.n / sm.t * 100) : '', sm && sm.n > 0 ? r1(sm.p) : '']);
+      });
+    });
+    function sheet(aoa) {
+      var ws = XLSX.utils.aoa_to_sheet(aoa);
+      ws['!cols'] = aoa[0].map(function (h, c) { var w = String(h).length; aoa.forEach(function (r) { w = Math.max(w, String(r[c] == null ? '' : r[c]).length); }); return { wch: Math.min(Math.max(w + 2, 8), 40) }; });
+      ws['!autofilter'] = { ref: XLSX.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: aoa.length - 1, c: aoa[0].length - 1 } }) };
+      return ws;
+    }
+    var wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, sheet(rows), 'Facilities');
+    XLSX.utils.book_append_sheet(wb, sheet(recRows), 'Assessments');
+    XLSX.writeFile(wb, 'dashboard-' + (S.fw === 'n' ? 'nqas' : 'kayakalp') + '-' + new Date().toISOString().slice(0, 10) + '.xlsx');
   }
 
   /* ---------- data ---------- */
@@ -406,7 +422,7 @@
     var a = b.dataset.act, v = b.dataset.v;
     if (a === 'close') close();
     else if (a === 'refresh') load();
-    else if (a === 'csv') csv();
+    else if (a === 'xlsx') xlsx();
     else if (a === 'fw') { S.fw = v; S.ft = ''; S.q = ''; S.open = {}; initPath(); paint(); }
     else if (a === 'crumb') { S.path = S.path.slice(0, +v); S.q = ''; paint(); }
     else if (a === 'drill') { S.path = S.path.concat([v]); S.q = ''; paint(); }
@@ -414,12 +430,27 @@
     else if (a === 'bf') backfill();
     else if (a === 'bfstop') { if (S.bf) S.bf.stop = true; }
     else if (a === 'open') openRec(S.rows[+v]);
+    else if (a === 'del') delRec(S.rows[+v]);
   }
   function onChange(ev) {
     var t = ev.target, f = t.dataset && t.dataset.f; if (!f) return;
     S[f] = f === 'minc' ? +t.value : t.value;
     if (f === 'q') { var pos = t.selectionStart; paint(); var n = ov.querySelector('[data-f=q]'); if (n) { n.focus(); try { n.setSelectionRange(pos, pos); } catch (x) {} } return; }
     paint();
+  }
+  async function delRec(r) {
+    if (!r) return;
+    var keys = (r._all || [r.key]).filter(Boolean);
+    if (!keys.length) { if (typeof qatToast === 'function') qatToast('Refresh the dashboard and try again', 'warn'); return; }
+    var dt = r.start_date || r.end_date;
+    if (!confirm('Delete the ' + (r.assessment_type || 'saved') + ' assessment' + (dt ? ' of ' + dmy(dt) : '') + ' for ' + r.facility_name + '?' + (keys.length > 1 ? '\n\n(' + keys.length + ' saved copies of it will be removed.)' : '') + '\n\nThis cannot be undone.')) return;
+    try {
+      var j = await cloud().api('delete', { keys: keys });
+      if (!j.ok) { alert(j.error || 'Could not delete.'); return; }
+      if (!isKK(r) && cloud().forget) cloud().forget(r);
+      if (typeof qatToast === 'function') qatToast('Deleted', 'ok');
+      await load();
+    } catch (x) { if (!x || x.message !== 'auth') alert('Could not delete. Check the internet connection and try again.'); }
   }
   async function openRec(r) {
     if (!r) return;
