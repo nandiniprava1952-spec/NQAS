@@ -716,7 +716,7 @@ button,select,input,textarea{touch-action:manipulation}input,select,textarea{fon
 <body>
 <div class="topbar">
   <div class="topbar-inner">
-    <div class="qat-status" id="qatStatus"><div class="qat-st-l" id="qatStL"></div><div class="qat-st-r" id="qatStR"></div></div>
+    <div class="qat-status" id="qatStatus"><div class="qat-st-l" id="qatStL"></div><div class="qat-st-m" id="qatStM"><button type="button" class="comp comp-home" id="compHome" title="Cover page">⌂ Home</button></div><div class="qat-st-r" id="qatStR"></div></div>
     <div class="brand-row">
       <div class="brand">
         <h1>Quality Assessment Toolkit</h1>
@@ -724,7 +724,7 @@ button,select,input,textarea{touch-action:manipulation}input,select,textarea{fon
       </div>
       <div class="toolbar"></div>
     </div>
-    <div class="comp-switch" id="compSwitch"><button type="button" class="comp on" id="compNQAS">NQAS</button><button type="button" class="comp" id="compKK">Kayakalp</button><button type="button" class="comp" id="compHome" title="Cover page">⌂ Home</button></div>
+    <div class="comp-switch" id="compSwitch"><button type="button" class="comp on" id="compNQAS">NQAS</button><button type="button" class="comp" id="compKK">Kayakalp</button><button type="button" class="comp" id="compDash" title="Dashboard" style="display:none">Dashboard</button></div>
     <div class="assess-type-row" style="margin-top:12px;display:block;width:100%;">
       <label for="metaAssessmentType" style="font-size:12.5px;opacity:.9;display:block;width:100%;margin:0 0 4px 0;">Assessment type</label>
       <select id="metaAssessmentType" aria-label="Select Assessment Type">
@@ -856,7 +856,7 @@ button,select,input,textarea{touch-action:manipulation}input,select,textarea{fon
 <div class="wrap"><div class="score-panel"><div class="section-title">NQAS Upload Repository</div><p style="margin:0 0 14px;color:#76543b;font-size:13px;line-height:1.5">Select a checklist workbook to make it the active template for <strong>Download Blank Checklist</strong> and <strong>Download Filled Checklist</strong>. The original workbook structure and formatting are retained as far as ExcelJS supports. The SDH entry is a DH-style adapted template; it is not presented as a separate NHSRC-issued SDH workbook.</p><div id="repositoryGrid" class="repository-grid"></div><div id="repositoryStatus" class="repo-status">No repository template selected yet.</div><div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap"><button class="btn" id="btnRepositoryUploadLocal">Upload XLSX from Computer</button><button class="btn" id="btnRepositoryClear">Clear Selected Template</button><button class="btn primary" id="btnDownloadAllBlank">Download All Blank Checklists (ZIP)</button></div></div></div></div>
 
 <style id="kk-css">
-.comp-switch{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}.comp{padding:9px 24px;border-radius:10px;border:1px solid rgba(255,255,255,.55);background:rgba(255,255,255,.12);color:#fff;font:700 14.5px Calibri,Arial,sans-serif;cursor:pointer}.comp:hover{background:rgba(255,255,255,.22)}.comp.on{background:#fff;color:#32134f;border-color:#fff}
+.comp-switch{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}.comp{padding:9px 24px;border-radius:10px;border:1px solid rgba(255,255,255,.55);background:rgba(255,255,255,.12);color:#fff;font:700 14.5px Calibri,Arial,sans-serif;cursor:pointer}.comp:hover{background:rgba(255,255,255,.22)}.comp.on{background:#fff;color:#32134f;border-color:#fff}.qat-st-m{flex:1 1 auto;display:flex;justify-content:center;align-items:center;min-width:0}.comp.comp-home{padding:0 16px;height:36px;min-height:36px;font-size:13.5px;white-space:nowrap}
 #kayakalpPage{--kg:#4ade80;--km:#fbbf24;--kb:#fb7185}
 #kayakalpPage .kk-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 #kayakalpPage .kk-b{border:1px solid #7a4a9f;background:#ffffff14;color:var(--ink);padding:7px 12px;border-radius:8px;font:inherit;font-size:13px;cursor:pointer}#kayakalpPage .kk-b:hover{background:#ffffff2a}#kayakalpPage .kk-b.p{background:var(--brand-600);border-color:var(--brand-600);color:#fff;font-weight:700}
@@ -3129,7 +3129,7 @@ async function signOut(){ if(!confirm('Sign out? Unsynced changes stay on this d
   try{await push();await api('logout',{});}catch(e){} origRem.call(localStorage,'nqas_cloud_session'); location.reload(); }
 
 function start(p){
-  profile=p; needAuth=false; ov.style.display='none'; [chip,listBtn,outBtn].forEach(b=>b.style.display=''); if(typeof dashB!=='undefined')dashB.style.display=(p.role==='facility')?'none':'inline-flex';
+  profile=p; needAuth=false; ov.style.display='none'; [chip,listBtn,outBtn].forEach(b=>b.style.display=''); if(dashB)dashB.style.display=(p.role==='facility')?'none':'';
   if(p.role!=='admin'){
     const sel=$('metaDistrictSel'), o=[...sel.options].find(o=>o.value&&(norm(o.value)===norm(p.district)||norm(o.textContent)===norm(p.district)));
     if(o){sel.value=o.value;sel.dispatchEvent(new Event('change'));} sel.disabled=true;
@@ -3273,11 +3273,7 @@ async function openRec(r){
 
 /* ---------- dashboard hooks (dashboard.js) ---------- */
 window.qatCloud={api:(a,p)=>api(a,p),profile:()=>profile,openRec,nSum};
-const dashB=document.createElement('button');dashB.className='btn';dashB.id='qatDashBtn';dashB.type='button';dashB.title='Dashboard';dashB.setAttribute('aria-label','Dashboard');
-dashB.style.cssText='display:none;min-width:36px;height:36px;padding:0 9px;border-radius:18px;align-items:center;justify-content:center';
-dashB.innerHTML='<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10"/><path d="M10 20V4"/><path d="M16 20v-7"/><path d="M22 20H2"/></svg>';
-dashB.onclick=()=>{if(window.qatDashboard)window.qatDashboard.open();};
-grp.insertBefore(dashB,outBtn);
+const dashB=$('compDash');if(dashB)dashB.onclick=()=>{if(window.qatDashboard)window.qatDashboard.open();};
 
 /* ---------- wiring ---------- */
 setInterval(()=>{ if(!profile||applying)return; const id=ident(), k=id?JSON.stringify(id):''; if(k!==lastKey){lastKey=k; id?pull(id):setStatus('idle');} },1500);

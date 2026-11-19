@@ -67,10 +67,11 @@ Then bump `VERSION` in `sw.js` and push. Re-running `export` keeps earlier work 
 * Server: replace `Code.gs` (see /Code.gs next to this zip), deploy a NEW VERSION, then run `migrateLegacyRecords` once.
 
 ## v34 – Dashboard (State Admin / District / Block logins)
-* New **Dashboard** button (bar-chart icon, top right, next to Sign out). Facility logins do not see it.
+* New **Dashboard** tab next to NQAS / Kayakalp (v35: Home moved to the top-middle of the header). Facility logins do not see it.
 * **State Admin**: districts → blocks → facilities → each assessment round. **District**: blocks → facilities. **Block**: its facilities.
 * Shows facilities with an assessment vs total (facilities with no record show as *Not started*, from the app's facility list), average score, facilities below 70%, per-area scores (AoC A–H for NQAS, themes for Kayakalp) and last-saved date. NQAS and Kayakalp have separate tabs.
 * Filters: assessment type, facility type, minimum answered checkpoints, date range, search, sort. **Export CSV** gives one row per facility with a score column per assessment round.
 * Every save now also sends a small score summary (`summary` column in the Records sheet). Records saved before v34 have no summary: open the Dashboard once and tap **Calculate missing scores** (reads each record, stores only the summary).
 * Server: replace `Code.gs`, deploy a NEW VERSION. The `summary` column is added automatically; nothing else to run.
 * The dashboard text is English only for now.
+* v36: the dashboard shows a score column for every round (Self, IA 1, IA 2, IA 3, Peer, District, State). Facility rows show that facility's score per round; district and block rows show the average per round and how many facilities it is based on.

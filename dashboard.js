@@ -60,7 +60,7 @@
       '.qd-n{background:#2d1942;border:1px solid #6b3a8f;border-radius:10px;padding:10px 12px;margin-bottom:12px;font-size:13.5px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}' +
       '.qd-n.err{background:#3b1724;border-color:#fb7185}.qd-n span{flex:1 1 220px}' +
       '.qd-t{overflow-x:auto;border:1px solid #4b2868;border-radius:10px;background:#1d1030}' +
-      '.qd-t table{width:100%;border-collapse:collapse;font-size:13.5px;min-width:720px}' +
+      '.qd-t table{width:100%;border-collapse:collapse;font-size:13.5px;min-width:1080px}' +
       '.qd-t th{text-align:left;font-weight:600;font-size:12px;opacity:.75;padding:9px 10px;border-bottom:1px solid #4b2868;white-space:nowrap}' +
       '.qd-t td{padding:9px 10px;border-top:1px solid #32134f;vertical-align:middle}' +
       '.qd-t tr:first-child td{border-top:0}' +
@@ -73,7 +73,7 @@
       '.qd-hs{display:inline-flex;gap:2px;vertical-align:middle}' +
       '.qd-hs i{width:15px;height:15px;border-radius:3px;background:#32134f;display:block}' +
       '.qd-hs i.good{background:#22a559}.qd-hs i.mid{background:#d9a21b}.qd-hs i.bad{background:#e5484d}' +
-      '.qd-pill{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11.5px;margin:1px 3px 1px 0;border:1px solid #6b3a8f;white-space:nowrap}' +
+      '.qd-t td .qd-sub{white-space:nowrap}.qd-pill{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11.5px;margin:1px 3px 1px 0;border:1px solid #6b3a8f;white-space:nowrap}' +
       '.qd-pill.good{border-color:#22a559;color:#4ade80}.qd-pill.mid{border-color:#d9a21b;color:#fbbf24}.qd-pill.bad{border-color:#e5484d;color:#fb7185}' +
       '.qd-st{font-size:12px;border-radius:10px;padding:2px 9px;white-space:nowrap;border:1px solid #6b3a8f}' +
       '.qd-st.none{opacity:.7}.qd-st.started{border-color:#d9a21b;color:#fbbf24}.qd-st.scored{border-color:#22a559;color:#4ade80}' +
@@ -160,11 +160,25 @@
     });
     return out.filter(function (f) { return !S.ft || f.gt === S.ft; });
   }
+  /* the facility's record for one assessment round (latest saved) and its score */
+  function round(f, t) {
+    var r = null;
+    for (var i = 0; i < f.recs.length; i++) if (f.recs[i].assessment_type === t) { r = f.recs[i]; break; }
+    if (!r) return null;
+    var sm = r.summary, ok = sm && sm.n > 0 && sm.t && sm.n / sm.t >= S.minc;
+    return { r: r, p: ok ? sm.p : null };
+  }
+  function rcell(x) {
+    if (!x) return '<td class="n"><span class="na">—</span></td>';
+    return x.p != null ? '<td class="n ' + band(x.p) + '"><b>' + r1(x.p) + '%</b></td>' : '<td class="n"><span class="na" title="Saved, no score counted yet">saved</span></td>';
+  }
+  function rhead() { return AT.map(function (t) { return '<th class="n">' + e(AT_S[t]) + '</th>'; }).join(''); }
   function areaKey() { return S.fw === 'n' ? 'aoc' : 'th'; }
   function agg(list) {
-    var a = { total: list.length, assessed: 0, scored: 0, sum: 0, below: 0, last: '', ar: {} }, ac = {};
+    var a = { total: list.length, assessed: 0, scored: 0, sum: 0, below: 0, last: '', ar: {}, rd: {} }, ac = {}, rs = {};
     list.forEach(function (f) {
       if (f.recs.length) a.assessed++;
+      AT.forEach(function (t) { var x = round(f, t); if (x && x.p != null) { (rs[t] = rs[t] || [0, 0]); rs[t][0] += x.p; rs[t][1]++; } });
       if (f.latest && f.latest.updated_at > a.last) a.last = f.latest.updated_at;
       if (f.score != null) {
         a.scored++; a.sum += f.score; if (f.score < PASS) a.below++;
@@ -173,6 +187,7 @@
       }
     });
     a.avg = a.scored ? a.sum / a.scored : null;
+    Object.keys(rs).forEach(function (t) { a.rd[t] = { avg: rs[t][0] / rs[t][1], n: rs[t][1] }; });
     Object.keys(ac).forEach(function (k) { a.ar[k] = ac[k][0] / ac[k][1]; });
     return a;
   }
@@ -282,28 +297,24 @@
       Object.keys(map).forEach(function (n) { gs.push({ name: n, a: agg(map[n]) }); });
       gs = gs.filter(function (g) { return !q || nz(g.name).indexOf(q) >= 0; });
       sortGroups(gs);
-      h += '<div class="qd-t"><table><thead><tr><th>' + (level === 0 ? 'District' : 'Block') + '</th><th>Assessed</th><th class="n">Avg score</th><th>Areas</th><th class="n">Below ' + PASS + '%</th><th class="n">Last saved</th></tr></thead><tbody>' +
+      h += '<div class="qd-t"><table><thead><tr><th>' + (level === 0 ? 'District' : 'Block') + '</th><th>Assessed</th><th class="n">Avg score</th>' + rhead() + '<th>Areas</th><th class="n">Below ' + PASS + '%</th><th class="n">Last saved</th></tr></thead><tbody>' +
         (gs.length ? gs.map(function (g) {
-          return '<tr><td><button class="qd-l no-i18n" data-act="drill" data-v="' + e(g.name) + '">' + e(g.name) + '</button><span class="qd-sub">' + g.a.total + ' facilities</span></td><td>' + cover(g.a) + '</td><td class="n ' + band(g.a.avg) + '"><b>' + pc(g.a.avg) + '</b></td><td>' + strip(g.a.ar) + '</td><td class="n ' + (g.a.below ? 'bad' : '') + '">' + g.a.below + '</td><td class="n">' + dshort(g.a.last) + '</td></tr>';
-        }).join('') : '<tr><td colspan="6" class="qd-e">Nothing matches these filters.</td></tr>') + '</tbody></table></div>';
+          return '<tr><td><button class="qd-l no-i18n" data-act="drill" data-v="' + e(g.name) + '">' + e(g.name) + '</button><span class="qd-sub">' + g.a.total + ' facilities</span></td><td>' + cover(g.a) + '</td><td class="n ' + band(g.a.avg) + '"><b>' + pc(g.a.avg) + '</b></td>' + AT.map(function (t) { var x = g.a.rd[t]; return x ? '<td class="n ' + band(x.avg) + '"><b>' + r1(x.avg) + '%</b><span class="qd-sub">' + x.n + ' facilit' + (x.n === 1 ? 'y' : 'ies') + '</span></td>' : '<td class="n"><span class="na">—</span></td>'; }).join('') + '<td>' + strip(g.a.ar) + '</td><td class="n ' + (g.a.below ? 'bad' : '') + '">' + g.a.below + '</td><td class="n">' + dshort(g.a.last) + '</td></tr>';
+        }).join('') : '<tr><td colspan="13" class="qd-e">Nothing matches these filters.</td></tr>') + '</tbody></table></div>';
     } else {
       var fs = inScope.filter(function (f) { return !q || nz(f.name).indexOf(q) >= 0; });
       sortFacs(fs);
       var STX = { none: 'Not started', started: 'Started', scored: 'Scored' };
-      h += '<div class="qd-t"><table><thead><tr><th>Facility</th><th>Status</th><th>Assessments</th><th class="n">Answered</th><th class="n">Score</th><th>Areas</th><th class="n">Last saved</th></tr></thead><tbody>' +
+      h += '<div class="qd-t"><table><thead><tr><th>Facility</th><th>Status</th>' + rhead() + '<th class="n">Answered</th><th class="n">Latest score</th><th>Areas</th><th class="n">Last saved</th></tr></thead><tbody>' +
         (fs.length ? fs.map(function (f) {
           var sm = f.latest && f.latest.summary, op = S.open[f.key], idx = facs.indexOf(f);
-          var pills = f.recs.slice().sort(function (a, b) { return rank(a.assessment_type) - rank(b.assessment_type); }).map(function (r) {
-            var p = r.summary && r.summary.n > 0 ? r.summary.p : null;
-            return '<span class="qd-pill ' + band(p) + '">' + e(AT_S[r.assessment_type] || r.assessment_type || '—') + (p != null ? ' ' + r1(p) + '%' : '') + '</span>';
-          }).join('') || '<span class="na">—</span>';
           var row = '<tr><td><button class="qd-l no-i18n" data-act="tog" data-v="' + idx + '" aria-expanded="' + !!op + '">' + (f.recs.length ? (op ? '▾ ' : '▸ ') : '') + e(f.name) + '</button><span class="qd-sub no-i18n">' + e(f.gt) + (S.path.length < 2 ? '' : '') + '</span></td>' +
-            '<td><span class="qd-st ' + f.st + '">' + STX[f.st] + '</span></td><td>' + pills + '</td>' +
+            '<td><span class="qd-st ' + f.st + '">' + STX[f.st] + '</span></td>' + AT.map(function (t) { return rcell(round(f, t)); }).join('') +
             '<td class="n">' + (f.comp != null ? Math.round(f.comp * 100) + '%' : '—') + '</td><td class="n ' + band(f.score) + '"><b>' + pc(f.score) + '</b></td>' +
             '<td>' + strip(sm && sm[areaKey()]) + '</td><td class="n">' + (f.latest ? dshort(f.latest.updated_at) : '—') + '</td></tr>';
-          if (op && f.recs.length) row += '<tr class="qd-x"><td colspan="7">' + detail(f) + '</td></tr>';
+          if (op && f.recs.length) row += '<tr class="qd-x"><td colspan="13">' + detail(f) + '</td></tr>';
           return row;
-        }).join('') : '<tr><td colspan="7" class="qd-e">No facilities match these filters.</td></tr>') + '</tbody></table></div>';
+        }).join('') : '<tr><td colspan="13" class="qd-e">No facilities match these filters.</td></tr>') + '</tbody></table></div>';
     }
     h += '<p class="qd-fn">A facility’s score comes from its most recently saved assessment that matches the filters. Average score is the mean of those facility scores; facilities without a score are left out of it. “Not started” facilities come from the facility list in the app; assessments saved for a facility that is not in that list (for example some district hospitals) are still counted.</p>';
     w.innerHTML = h; ov.scrollTop = sc;
