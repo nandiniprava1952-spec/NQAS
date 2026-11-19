@@ -135,6 +135,15 @@
     if (S.to && (!d || d > S.to)) return false;
     return true;
   }
+/* one assessment (facility + type + date) can exist as several saved copies (older app versions, date added later): show only the latest saved copy */
+  function latestCopies(rows) {
+    var best = {}, order = [];
+    rows.forEach(function (r) {
+      var k = [nz(r.district), nz(r.facility_type), nz(r.facility_name), nz(r.assessment_type), r.start_date || r.end_date || ''].join('|');
+      if (!best[k]) { best[k] = r; order.push(k); } else if (String(r.updated_at) > String(best[k].updated_at)) best[k] = r;
+    });
+    return order.map(function (k) { return best[k]; });
+  }
   function derive() {
     var out = [], k3 = {}, k2 = {}, ex = {};
     roster().forEach(function (f) {
@@ -142,7 +151,7 @@
       out.push(o); (k3[nz(f.district) + '|' + nz(f.block) + '|' + nz(f.name)] = k3[nz(f.district) + '|' + nz(f.block) + '|' + nz(f.name)] || []).push(o);
       (k2[nz(f.district) + '|' + nz(f.name)] = k2[nz(f.district) + '|' + nz(f.name)] || []).push(o);
     });
-    S.rows.filter(recOK).forEach(function (r) {
+    latestCopies(S.rows.filter(recOK)).forEach(function (r) {
       var o = pick(k3[nz(r.district) + '|' + nz(r.block) + '|' + nz(r.facility_name)], r) || pick(k2[nz(r.district) + '|' + nz(r.facility_name)], r);
       if (!o) {   /* not in the roster (e.g. district hospitals): keep it, so no record is hidden */
         var xk = nz(r.district) + '|' + nz(r.block) + '|' + nz(r.facility_name) + '|' + r.facility_type;
