@@ -401,7 +401,7 @@
       while (i < todo.length && !bf.stop) {
         var r = todo[i++];
         try {
-          var ids = { district: r.district, facility_type: r.facility_type, facility_name: r.facility_name, assessment_type: r.assessment_type || '' };
+          var ids = { district: r.district, facility_type: r.facility_type, facility_name: r.facility_name, assessment_type: r.assessment_type || '', start_date: r.start_date || '', key: r.key };
           var j = await cloud().api('pull', ids), sm = null;
           if (j.ok && j.found) sm = isKK(r) ? window.qatKk.score(r.facility_type.slice(3), j.data.answers) : cloud().nSum(r.facility_type, j.data.answers);
           if (!sm) { bf.fail++; continue; }
