@@ -1,5 +1,5 @@
 /* Quality Assessment Toolkit – service worker. Bump VERSION whenever you replace index.html or any file below. */
-const VERSION='v39';const CACHE='qat-'+VERSION;
+const VERSION='v40';const CACHE='qat-'+VERSION;
 const CORE=['./','index.html','i18n.js','dashboard.js','data/or-checklist.json','manifest.webmanifest','icons/icon-192.png','icons/icon-512.png','icons/maskable-512.png','icons/apple-touch-icon.png','icons/favicon-32.png','images/cover-1.jpg','images/cover-2.jpg','images/cover-3.jpg','vendor/xlsx.full.min.js','vendor/exceljs.min.js','vendor/jszip.min.js','vendor/jspdf.umd.min.js','vendor/jspdf.plugin.autotable.min.js','data/AAM-SHC-TYPE-B.xlsx','data/AAM-SHC.xlsx','data/AAMSHC-VIRTUAL.xlsx','data/AAMSHC-VIRTUAL12-B.xlsx','data/AAMSHC-VIRTUAL12.xlsx','data/CHC-FRU.xlsx','data/CHC-NONFRU.xlsx','data/DH.xlsx','data/PHC.xlsx','data/PHC4.xlsx','data/SDH-DH-STYLE.xlsx','data/UPHC.xlsx'];
 /* Download every core file ourselves so the page can show a real progress percentage. */
 async function notify(m){const cl=await self.clients.matchAll({type:'window',includeUncontrolled:true});cl.forEach(c=>c.postMessage(m))}

@@ -20,6 +20,7 @@
   function band(p) { return p == null ? 'na' : p >= PASS ? 'good' : p >= 50 ? 'mid' : 'bad'; }
   function r1(p) { return Math.round(p * 10) / 10; }
   function pc(p) { return p == null ? '—' : r1(p) + '%'; }
+  function dtm(iso) { if (!iso) return '\u2014'; var d = new Date(iso); return isNaN(d) ? '\u2014' : d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) + ', ' + d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }); }
   function dshort(iso) { if (!iso) return '—'; var d = new Date(iso); return isNaN(d) ? '—' : d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }); }
   function dmy(d) { return /^\d{4}-\d{2}-\d{2}$/.test(d || '') ? d.slice(8) + '-' + d.slice(5, 7) + '-' + d.slice(0, 4) : (d || ''); }
   function dateOf(r) { return /^\d{4}-\d{2}-\d{2}$/.test(r.start_date || '') ? r.start_date : String(r.updated_at || '').slice(0, 10); }
@@ -299,7 +300,7 @@
       sortGroups(gs);
       h += '<div class="qd-t"><table><thead><tr><th>' + (level === 0 ? 'District' : 'Block') + '</th><th>Assessed</th>' + rhead() + '<th class="n">Avg score</th><th>Areas</th><th class="n">Below ' + PASS + '%</th><th class="n">Last saved</th></tr></thead><tbody>' +
         (gs.length ? gs.map(function (g) {
-          return '<tr><td><button class="qd-l no-i18n" data-act="drill" data-v="' + e(g.name) + '">' + e(g.name) + '</button><span class="qd-sub">' + g.a.total + ' facilities</span></td><td>' + cover(g.a) + '</td>' + AT.map(function (t) { var x = g.a.rd[t]; return x ? '<td class="n ' + band(x.avg) + '"><b>' + r1(x.avg) + '%</b><span class="qd-sub">' + x.n + ' facilit' + (x.n === 1 ? 'y' : 'ies') + '</span></td>' : '<td class="n"><span class="na">—</span></td>'; }).join('') + '<td class="n ' + band(g.a.avg) + '"><b>' + pc(g.a.avg) + '</b></td><td>' + strip(g.a.ar) + '</td><td class="n ' + (g.a.below ? 'bad' : '') + '">' + g.a.below + '</td><td class="n">' + dshort(g.a.last) + '</td></tr>';
+          return '<tr><td><button class="qd-l no-i18n" data-act="drill" data-v="' + e(g.name) + '">' + e(g.name) + '</button><span class="qd-sub">' + g.a.total + ' facilities</span></td><td>' + cover(g.a) + '</td>' + AT.map(function (t) { var x = g.a.rd[t]; return x ? '<td class="n ' + band(x.avg) + '"><b>' + r1(x.avg) + '%</b><span class="qd-sub">' + x.n + ' facilit' + (x.n === 1 ? 'y' : 'ies') + '</span></td>' : '<td class="n"><span class="na">—</span></td>'; }).join('') + '<td class="n ' + band(g.a.avg) + '"><b>' + pc(g.a.avg) + '</b></td><td>' + strip(g.a.ar) + '</td><td class="n ' + (g.a.below ? 'bad' : '') + '">' + g.a.below + '</td><td class="n">' + dtm(g.a.last) + '</td></tr>';
         }).join('') : '<tr><td colspan="13" class="qd-e">Nothing matches these filters.</td></tr>') + '</tbody></table></div>';
     } else {
       var fs = inScope.filter(function (f) { return !q || nz(f.name).indexOf(q) >= 0; });
@@ -311,7 +312,7 @@
           var row = '<tr><td><button class="qd-l no-i18n" data-act="tog" data-v="' + idx + '" aria-expanded="' + !!op + '">' + (f.recs.length ? (op ? '▾ ' : '▸ ') : '') + e(f.name) + '</button><span class="qd-sub no-i18n">' + e(f.gt) + (S.path.length < 2 ? '' : '') + '</span></td>' +
             '<td><span class="qd-st ' + f.st + '">' + STX[f.st] + '</span></td>' + AT.map(function (t) { return rcell(round(f, t)); }).join('') +
             '<td class="n">' + (f.comp != null ? Math.round(f.comp * 100) + '%' : '—') + '</td><td class="n ' + band(f.score) + '"><b>' + pc(f.score) + '</b></td>' +
-            '<td>' + strip(sm && sm[areaKey()]) + '</td><td class="n">' + (f.latest ? dshort(f.latest.updated_at) : '—') + '</td></tr>';
+            '<td>' + strip(sm && sm[areaKey()]) + '</td><td class="n">' + (f.latest ? dtm(f.latest.updated_at) + '<span class="qd-sub">' + e((f.latest.assessment_type || '') + (f.latest.start_date ? ' \u00b7 ' + dmy(f.latest.start_date) : '')) + (f.latest.updated_by ? ' \u00b7 by ' + e(f.latest.updated_by) : '') + '</span>' : '—') + '</td></tr>';
           if (op && f.recs.length) row += '<tr class="qd-x"><td colspan="13">' + detail(f) + '</td></tr>';
           return row;
         }).join('') : '<tr><td colspan="13" class="qd-e">No facilities match these filters.</td></tr>') + '</tbody></table></div>';
@@ -326,7 +327,7 @@
       var dt = (r.start_date || r.end_date) ? dmy(r.start_date) + (r.end_date && r.end_date !== r.start_date ? ' → ' + dmy(r.end_date) : '') : '';
       var chips = ar ? Object.keys(ar).sort().map(function (k) { return '<span class="qd-ch ' + band(ar[k]) + '" title="' + e(areaName(k, r.facility_type)) + '"><b>' + e(k) + '</b> ' + r1(ar[k]) + '%</span>'; }).join('') : '<span class="na">Score not calculated yet</span>';
       var i = S.rows.indexOf(r);
-      return '<div class="qd-r"><div><b>' + e(r.assessment_type || '—') + '</b><span class="qd-sub">' + e(dt || 'No dates') + (r.assessors ? ' · ' + e(r.assessors) : '') + '</span><span class="qd-sub">Saved ' + dshort(r.updated_at) + (r.updated_by ? ' by ' + e(r.updated_by) : '') + '</span></div>' +
+      return '<div class="qd-r"><div><b>' + e(r.assessment_type || '—') + '</b><span class="qd-sub">' + e(dt || 'No dates') + (r.assessors ? ' · ' + e(r.assessors) : '') + '</span><span class="qd-sub">Saved ' + dtm(r.updated_at) + (r.updated_by ? ' by ' + e(r.updated_by) : '') + '</span></div>' +
         '<div><span class="qd-ch ' + band(p) + '"><b style="font-size:16px">' + pc(p) + '</b></span>' + (sm && sm.t ? '<span class="qd-sub" style="display:inline">' + sm.n + ' of ' + sm.t + ' answered</span><br>' : '<br>') + chips + '</div>' +
         '<div><button class="qd-b" data-act="open" data-v="' + i + '">Open</button></div></div>';
     }).join('');
