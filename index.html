@@ -3037,12 +3037,13 @@ const API_URL='https://script.google.com/macros/s/AKfycbzA_0AzFoP7lbBcmodT3QU8g-
 /* ========================================================================== */
 const $=id=>document.getElementById(id), norm=s=>(s||'').trim().toLowerCase();
 const origSet=Storage.prototype.setItem, origRem=Storage.prototype.removeItem;
-let token='', profile=null, lastKey='', timer=null, pushing=false, applying=false, needAuth=false, dirty=false, pulling=false;
+let renFrom=null, token='', profile=null, lastKey='', timer=null, pushing=false, applying=false, needAuth=false, dirty=false, pulling=false;
 const schedule=ms=>{dirty=true;clearTimeout(timer);timer=setTimeout(()=>push(),ms==null?2000:ms);};
 /* a saved record = district + facility type + facility name + ASSESSMENT TYPE. This device keeps ONE working copy per facility type, so remember which record that copy was last in sync with (okId): when the assessment type is switched, the copy must not leak into the other assessment type's record. */
 const okGet=ft=>{try{return JSON.parse(localStorage.getItem('qat_ok_'+ft))}catch(e){return null}};
 const okSet=id=>{try{localStorage.setItem('qat_ok_'+id.facility_type,JSON.stringify(id))}catch(e){}};
 const sameFacOtherType=(a,b)=>!!(a&&b&&a.facility_type===b.facility_type&&norm(a.district)===norm(b.district)&&norm(a.facility_name)===norm(b.facility_name)&&norm(a.assessment_type)!==norm(b.assessment_type));
+const sameFacOtherDate=(a,b)=>!!(a&&b&&a.facility_type===b.facility_type&&norm(a.district)===norm(b.district)&&norm(a.facility_name)===norm(b.facility_name)&&norm(a.assessment_type)===norm(b.assessment_type)&&(a.start_date||'')!==(b.start_date||''));
 const esc2=x=>String(x==null?'':x).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 const hook=k=>{ if(!applying && profile && /^nqas_(answers|pss)_/.test(k)) schedule(); };
 Storage.prototype.setItem=function(k){origSet.apply(this,arguments);hook(k);};
@@ -3146,7 +3147,7 @@ function ident(){
   const name=($('metaFacilityName').value||$('metaFacilitySel').value||'').trim();
   const district=profile.role==='admin'?($('metaDistrict').value||'').trim():profile.district;
   if(!currentFacility||!name||!district)return null;
-  return {district,facility_type:currentFacility,facility_name:name,assessment_type:(($('metaAssessmentType')||{}).value||'').trim()};
+  return {district,facility_type:currentFacility,facility_name:name,assessment_type:(($('metaAssessmentType')||{}).value||'').trim(),start_date:(($('metaStartDate')||{}).value||'').trim()};
 }
 function snapshot(idOv){const m=getMeta();if(idOv)m.assessment_type=idOv.assessment_type;return {answers:answers[currentFacility]||{},pss:($('certPSS')||{}).value||'',meta:m,remarks:($('gdRemarks')||{}).value||''};}
 
@@ -3156,12 +3157,37 @@ async function push(idOv){
   if(!idOv&&sameFacOtherType(okGet(id.facility_type),id)){lastKey='';return false;}   /* assessment type was just switched: pull() must decide first (blank vs copy) */
   if(pushing){ if(idOv){while(pushing)await new Promise(r=>setTimeout(r,200));} else {schedule(1500);return false;} }
   pushing=true; setStatus('syncing'); let ok=false; dirty=false;
-  try{const j=await api('push',Object.assign({},id,{data:snapshot(idOv),summary:nSum(currentFacility)})); ok=!!j.ok; if(ok)okSet(id); else dirty=true; setStatus(j.ok?'synced':'offline'); if(!j.ok)schedule(20000);}
+  try{const j=await api('push',Object.assign({},id,{data:snapshot(idOv),summary:nSum(currentFacility),prev_start_date:idOv?'':(renFrom||'')})); ok=!!j.ok; if(ok){okSet(id);if(!idOv)renFrom=null;} else dirty=true; setStatus(j.ok?'synced':'offline'); if(!j.ok)schedule(20000);}
   catch(e){ dirty=true; if(e.message!=='auth'){setStatus('offline');schedule(20000);} }
   pushing=false; return ok;
 }
 /* + New entry: upload the current assessment, then clear this screen for a fresh entry (facility, district and block stay; the Assessment type is cleared so the new entry gets its own type and never overwrites the saved one) */
 async function newEntry(){
+  if(!currentFacility){qatToast('Select a facility type first','warn');return;}
+  if(!profile)return newEntryOld();
+  const id0=ident(); if(!id0){qatToast('Select the facility first','warn');return;}
+  if(NET()==='offline'){alert('Connect to the internet to start a new entry: the app must check whether an assessment already exists for that date.');return;}
+  clearTimeout(timer); if(!(await push())){alert('Your latest changes could not be uploaded yet (offline?). Try again once it shows "Synced".');return;}
+  const ats=[...(($('metaAssessmentType')||{}).options||[])].map(o=>o.value).filter(Boolean), types=ats.length?ats:AT_ORDER, today=new Date(Date.now()-new Date().getTimezoneOffset()*6e4).toISOString().slice(0,10);
+  box('<h3 style="margin:0 0 4px">New entry</h3><p style="margin:0 0 12px;opacity:.8;font-size:13px">'+esc2(id0.facility_name)+'</p><label>Assessment type</label><select id="neT" '+fld+'><option value="">Select\u2026</option>'+types.map(t=>'<option'+(t===id0.assessment_type?' selected':'')+'>'+esc2(t)+'</option>').join('')+'</select><label>Assessment start date</label><input id="neD" type="date" value="'+today+'" '+fld+'><div id="neM" style="color:#fb7185;min-height:18px;font-size:13px;margin-bottom:8px"></div><button id="neGo" class="btn primary" style="width:100%;padding:10px">Continue</button><button id="neX" class="btn" style="width:100%;padding:8px;margin-top:8px">Cancel</button>');
+  $('neX').onclick=()=>ov.style.display='none';
+  $('neGo').onclick=async()=>{
+    const t=$('neT').value,d=$('neD').value; if(!t||!d){$('neM').textContent='Choose the assessment type and the start date.';return;}
+    $('neM').textContent='Checking saved assessments\u2026'; let j; try{j=await api('list',{});}catch(e){if(e.message!=='auth')$('neM').textContent='Could not check the cloud. Try again when online.';return;}
+    const hit=(j.rows||[]).find(r=>r.facility_type===id0.facility_type&&norm(r.district)===norm(id0.district)&&norm(r.facility_name)===norm(id0.facility_name)&&norm(r.assessment_type)===norm(t)&&String(r.start_date||'')===d);
+    if(hit){
+      box('<h3 style="margin:0 0 6px">Assessment already started</h3><p style="font-size:14px;line-height:1.45;margin:0 0 14px">A <b>'+esc2(t)+'</b> assessment for <b>'+esc2(id0.facility_name)+'</b> dated <b>'+dmy(d)+'</b> already exists (last saved '+esc2(new Date(hit.updated_at).toLocaleString())+(hit.updated_by?' by '+esc2(hit.updated_by):'')+').<br>Open it to fill the remaining checkpoints and complete it.</p><button id="neOpen" class="btn primary" style="width:100%;padding:10px">Open &amp; continue</button><button id="neBack" class="btn" style="width:100%;padding:8px;margin-top:8px">Pick another date</button>');
+      $('neOpen').onclick=()=>openRec(hit); $('neBack').onclick=()=>newEntry(); return;
+    }
+    ov.style.display='none'; startBlank(id0);
+    applying=true;
+    try{const at=$('metaAssessmentType'); if(at){at.value=t; at.dispatchEvent(new Event('change',{bubbles:true}));} const sd=$('metaStartDate'); if(sd)sd.value=d; if($('gdStartDate'))$('gdStartDate').value=d; if($('gdAssessmentType'))$('gdAssessmentType').value=t;
+      if(typeof updateAssessorFields==='function')updateAssessorFields(); renderAll(); if(typeof buildSummaryPage==='function')buildSummaryPage();}finally{applying=false;}
+    const id=ident(); renFrom=null; if(id){okSet(id);lastKey=JSON.stringify(id);} dirty=false; setStatus('idle'); schedule(500);
+    qatToast('New '+t+' entry started for '+dmy(d),'ok');
+  };
+}
+async function newEntryOld(){
   if(!currentFacility){qatToast('Select a facility type first','warn');return;}
   const id=profile?ident():null;
   const msg=id?'Start a NEW entry for '+id.facility_name+'?\n\nThe current assessment stays saved in the cloud. The screen is cleared and you choose the Assessment type for the new entry.':'Start a NEW blank entry?\n\nYou are not signed in, so the answers on this device are not saved to the cloud and will be cleared. Download the filled checklist first if you need a copy.';
@@ -3207,6 +3233,7 @@ async function pull0(id){
   if(!j.found){
     if(!hasLocal){okSet(id);setStatus('synced');return;}
     if(sw&&confirm('No "'+now+'" assessment is saved for '+id.facility_name+' yet.\n\nOK = start a NEW blank "'+now+'" assessment ("'+prev+'" stays saved in the cloud)\nCancel = copy the current answers into this "'+now+'" assessment')){startBlank(id);return;}
+    if(sameFacOtherDate(o,id)&&o.start_date)renFrom=o.start_date;   /* start date corrected on the same assessment: re-key, don't fork */
     okSet(id);schedule(300);return;
   }
   if(JSON.stringify(j.data.answers||{})===JSON.stringify(local)){okSet(id);setStatus('synced');return;}
@@ -3288,6 +3315,7 @@ async function openRec(r){
   ov.style.display='none'; const fd=$('facilityDropdown');
   if(profile.role==='admin'){const o=[...$('metaDistrictSel').options].find(o=>norm(o.textContent)===norm(r.district)); if(o){$('metaDistrictSel').value=o.value;$('metaDistrictSel').dispatchEvent(new Event('change'));}}
   const at=$('metaAssessmentType'); if(at){at.value=r.assessment_type||''; at.dispatchEvent(new Event('change',{bubbles:true}));}
+  {const sd=$('metaStartDate'); if(sd)sd.value=r.start_date||'';}
   $('metaFacilitySel').disabled=profile.role==='facility'; $('metaFacilitySel').value=r.facility_name; $('metaFacilityName').value=r.facility_name;
   fd.value=r.facility_type;
   if(fd.value!==r.facility_type){alert('This facility type is hidden right now. Set Assessment type to "Self" (for Virtual types) and open it again.');return;}
