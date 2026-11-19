@@ -248,6 +248,7 @@ button,select,input,textarea{touch-action:manipulation}input,select,textarea{fon
 <script src="vendor/jspdf.umd.min.js"></script>
 <script src="vendor/jspdf.plugin.autotable.min.js"></script>
 <script src="i18n.js"></script>
+<script src="dashboard.js" defer></script>
 
 <style id="dark-purple-theme">
   :root{
@@ -2943,6 +2944,8 @@ if(asTemplate){const s=$('kkRepoStatus');if(s&&tplOk)s.innerHTML=`<strong>Upload
 else alert(n+' scores imported.')}
 $('kkFile').onchange=function(){const f=this.files[0];this.value='';if(f)kkReadFile(f,false)};
 $('kkRepoFile').onchange=function(){const f=this.files[0];this.value='';if(f)kkReadFile(f,true)};
+/* score summary for the dashboard (sent with every save) */
+function kkSum(type,ans){const a0=A,c0=cur;try{if(type!==undefined){A=ans||{};cur=type}const R=calc(),th={};Object.keys(R.th).forEach(k=>{th[k]=pct(R.th[k].a,R.th[k].m)});return {v:1,k:'k',p:R.pct,a:R.ach,m:R.max,n:R.ans,t:R.n,th}}catch(e){return null}finally{A=a0;cur=c0}}
 /* cloud sync – reuses the NQAS login session; records are stored as facility_type KK_* */
 const sess=()=>sget('nqas_cloud_session');
 async function api(action,p){const s=sess();if(!s||!s.token)throw new Error('nosession');const r=await fetch(API,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(Object.assign({action,token:s.token},p))}),j=await r.json();if(j.error==='auth'){dispatchEvent(new Event('qatauth'));throw new Error('auth')}return j}
@@ -2954,7 +2957,7 @@ const ident=()=>{const s=sess(),n=fName(),d=s?(s.role==='admin'?dName():s.distri
 function sched(ms){if(applying||!sess())return;dirty=true;clearTimeout(tm);tm=setTimeout(()=>push(),ms==null?2000:ms)}
 async function push(idOv){const id=idOv||ident();if(!id){st(sess()?'○ Select facility to sync':'Offline mode – sign in to sync');return false}
 if(!idOv&&sameT(okGet(id.facility_type),id)){touch();return false}   /* assessment type just switched: touch() decides first (blank vs copy) */
-if(busy){if(idOv){while(busy)await new Promise(r=>setTimeout(r,200))}else{sched(1500);return false}}busy=true;let ok=false;st('↻ Syncing…');dirty=false;try{const m=getMeta();if(idOv)m.atype=idOv.assessment_type;const j=await api('push',Object.assign({},id,{data:{answers:A,meta:m}}));ok=!!j.ok;if(ok)okSet(id);else dirty=true;st(j.ok?'● Synced':'⚠ Offline – will retry');if(!j.ok)sched(20000)}catch(e){dirty=true;st(e.message==='auth'?'Session expired – tap ☁ to sign in':'⚠ Offline – will retry');if(e.message!=='auth')sched(20000)}busy=false;return ok}
+if(busy){if(idOv){while(busy)await new Promise(r=>setTimeout(r,200))}else{sched(1500);return false}}busy=true;let ok=false;st('↻ Syncing…');dirty=false;try{const m=getMeta();if(idOv)m.atype=idOv.assessment_type;const j=await api('push',Object.assign({},id,{data:{answers:A,meta:m},summary:kkSum()}));ok=!!j.ok;if(ok)okSet(id);else dirty=true;st(j.ok?'● Synced':'⚠ Offline – will retry');if(!j.ok)sched(20000)}catch(e){dirty=true;st(e.message==='auth'?'Session expired – tap ☁ to sign in':'⚠ Offline – will retry');if(e.message!=='auth')sched(20000)}busy=false;return ok}
 async function touch(){if(touching)return;touching=true;try{await touch0()}finally{touching=false}}
 async function touch0(){const id=ident();if(!id){st(sess()?'○ Select facility to sync':'Offline mode – sign in to sync');return}st('↻ Syncing…');let j;try{j=await api('pull',id)}catch(e){st('⚠ Offline');return}if(!j.ok){st('⚠ Offline');return}const has=Object.keys(A).length>0;
 const o=okGet(id.facility_type),sw=sameT(o,id),prev=(o&&o.assessment_type)||'previous',now=id.assessment_type||'this';
@@ -2988,6 +2991,14 @@ if(!ident()){qatToast('Saved on this device. Select the facility to save to the 
 clearTimeout(tm);qatToast('Saving…');const ok=await push();
 if(ok)qatToast('✔ Saved to cloud','ok');else qatToast(window.qatNeedAuth&&window.qatNeedAuth()?'Saved on this device. Session expired – tap ☁ to sign in.':'Saved on this device. Cloud save failed – will retry.','warn')};
 addEventListener('online',()=>sched(500));addEventListener('pagehide',()=>{if(ident()){clearTimeout(tm);push()}});
+/* dashboard hooks: open a Kayakalp record, switch component, score a record without loading it */
+window.qatKk={score:(type,ans)=>kkSum(type,ans),comp:c=>setComp(c),isKk:()=>$('compKK').classList.contains('on'),
+ open:async r=>{if(dirty&&sess()){clearTimeout(tm);const okp=await push();if(!okp&&!confirm('Your latest changes could not be uploaded yet (offline?).\n\nOpen another assessment anyway? Unsynced changes on this device may be replaced.'))return}
+  persist();const adm=(sess()||{}).role==='admin';
+  if(adm){const d=$('metaDistrictSel'),o=[...d.options].find(o=>o.text.toLowerCase()===r.district.toLowerCase());if(o){d.value=o.value;d.dispatchEvent(new Event('change',{bubbles:true}))}}
+  const at=$('metaAssessmentType');at.value=r.assessment_type||'';at.dispatchEvent(new Event('change',{bubbles:true}));
+  cur=r.facility_type.slice(3);$('kkType').value=cur;const o=[...$('metaFacilityList').options].find(o=>o.value.toLowerCase().indexOf(r.facility_name.toLowerCase()+' (')===0);$('metaFacilitySel').value=o?o.value:r.facility_name;$('metaFacilitySel').dispatchEvent(new Event('input'));key='';A={};loadKey(mk(),false);render();
+  if(window.qatKk.isKk())touch();else setComp('kk')}};
 /* component switcher: NQAS | Kayakalp */
 const nav=document.querySelector('.page-nav'),pg=$('kayakalpPage'),tabs=[...document.querySelectorAll('.page-tab:not(.kk-t)')];let lastPage='assessmentPage';
 tabs.forEach(b=>b.addEventListener('click',()=>{lastPage=b.dataset.page}));
@@ -3118,7 +3129,7 @@ async function signOut(){ if(!confirm('Sign out? Unsynced changes stay on this d
   try{await push();await api('logout',{});}catch(e){} origRem.call(localStorage,'nqas_cloud_session'); location.reload(); }
 
 function start(p){
-  profile=p; needAuth=false; ov.style.display='none'; [chip,listBtn,outBtn].forEach(b=>b.style.display='');
+  profile=p; needAuth=false; ov.style.display='none'; [chip,listBtn,outBtn].forEach(b=>b.style.display=''); if(typeof dashB!=='undefined')dashB.style.display=(p.role==='facility')?'none':'inline-flex';
   if(p.role!=='admin'){
     const sel=$('metaDistrictSel'), o=[...sel.options].find(o=>o.value&&(norm(o.value)===norm(p.district)||norm(o.textContent)===norm(p.district)));
     if(o){sel.value=o.value;sel.dispatchEvent(new Event('change'));} sel.disabled=true;
@@ -3143,7 +3154,7 @@ async function push(idOv){
   if(!idOv&&sameFacOtherType(okGet(id.facility_type),id)){lastKey='';return false;}   /* assessment type was just switched: pull() must decide first (blank vs copy) */
   if(pushing){ if(idOv){while(pushing)await new Promise(r=>setTimeout(r,200));} else {schedule(1500);return false;} }
   pushing=true; setStatus('syncing'); let ok=false; dirty=false;
-  try{const j=await api('push',Object.assign({},id,{data:snapshot(idOv)})); ok=!!j.ok; if(ok)okSet(id); else dirty=true; setStatus(j.ok?'synced':'offline'); if(!j.ok)schedule(20000);}
+  try{const j=await api('push',Object.assign({},id,{data:snapshot(idOv),summary:nSum(currentFacility)})); ok=!!j.ok; if(ok)okSet(id); else dirty=true; setStatus(j.ok?'synced':'offline'); if(!j.ok)schedule(20000);}
   catch(e){ dirty=true; if(e.message!=='auth'){setStatus('offline');schedule(20000);} }
   pushing=false; return ok;
 }
@@ -3208,6 +3219,18 @@ function apply(d){
   setStatus('synced');
 }
 
+/* ---------- score summary (sent with every save so the dashboard can load in one call) ---------- */
+function nSum(fac,ans){ try{
+  if(!fac||!NQAS_DATA[fac])return null;
+  const prev=answers[fac]; if(ans!==undefined)answers[fac]=ans;
+  try{
+    const s=computeScores(fac),aoc={},dep={};
+    Object.keys(s.aoc).forEach(a=>{aoc[a]=pct(s.aoc[a].ach,s.aoc[a].max)});
+    NQAS_DATA[fac].departments.forEach(d=>{const x=s.deptScores[d.id];if(x&&x.max)dep[d.id]=pct(x.ach,x.max)});
+    return {v:1,k:'n',p:pct(s.totalAch,s.totalMax),a:s.totalAch,m:s.totalMax,n:s.totalAnswered,t:s.totalCps,aoc,dep};
+  }finally{ if(ans!==undefined)answers[fac]=prev; }
+}catch(e){return null} }
+
 /* ---------- saved assessments (all assessments of every facility: Self / Internal / Peer / District / State) ---------- */
 const AT_ORDER=['Self','Internal Assessment 1','Internal Assessment 2','Internal Assessment 3','Peer','District','State'], atRank=t=>{const i=AT_ORDER.indexOf(t);return i<0?99:i};
 const dmy=d=>/^\d{4}-\d{2}-\d{2}$/.test(d||'')?d.slice(8)+'-'+d.slice(5,7)+'-'+d.slice(0,4):(d||'');
@@ -3247,6 +3270,14 @@ async function openRec(r){
   if(fd.value!==r.facility_type){alert('This facility type is hidden right now. Set Assessment type to "Self" (for Virtual types) and open it again.');return;}
   fd.dispatchEvent(new Event('change')); lastKey='';
 }
+
+/* ---------- dashboard hooks (dashboard.js) ---------- */
+window.qatCloud={api:(a,p)=>api(a,p),profile:()=>profile,openRec,nSum};
+const dashB=document.createElement('button');dashB.className='btn';dashB.id='qatDashBtn';dashB.type='button';dashB.title='Dashboard';dashB.setAttribute('aria-label','Dashboard');
+dashB.style.cssText='display:none;min-width:36px;height:36px;padding:0 9px;border-radius:18px;align-items:center;justify-content:center';
+dashB.innerHTML='<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10"/><path d="M10 20V4"/><path d="M16 20v-7"/><path d="M22 20H2"/></svg>';
+dashB.onclick=()=>{if(window.qatDashboard)window.qatDashboard.open();};
+grp.insertBefore(dashB,outBtn);
 
 /* ---------- wiring ---------- */
 setInterval(()=>{ if(!profile||applying)return; const id=ident(), k=id?JSON.stringify(id):''; if(k!==lastKey){lastKey=k; id?pull(id):setStatus('idle');} },1500);
