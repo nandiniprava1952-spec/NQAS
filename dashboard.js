@@ -390,10 +390,12 @@
       S.err = x && x.message === 'auth' ? 'Your session has expired. Close this screen, tap the ☁ chip at the top and sign in again.' : 'Could not load. Check the internet connection and try again.';
     }
     paint();
+    if (S.loaded && !S.bf) backfill(true);
   }
   /* fill the score summary of records saved before the dashboard existed (pull each record, score it, store only the summary) */
-  async function backfill() {
-    var todo = S.rows.filter(function (r) { return (S.fw === 'k' ? isKK(r) : !isKK(r)) && !r.summary; });
+  async function backfill(auto) {   /* auto = runs by itself after the list loads; records that failed once are not retried until the next full open */
+    S.bfSkip = S.bfSkip || {};
+    var todo = S.rows.filter(function (r) { return (S.fw === 'k' ? isKK(r) : !isKK(r)) && !r.summary && !(auto && S.bfSkip[r.key]); });
     if (!todo.length || S.bf) return;
     S.bf = { n: todo.length, done: 0, fail: 0, stop: false }; paint();
     var i = 0, bf = S.bf;
@@ -404,16 +406,16 @@
           var ids = { district: r.district, facility_type: r.facility_type, facility_name: r.facility_name, assessment_type: r.assessment_type || '', start_date: r.start_date || '', key: r.key };
           var j = await cloud().api('pull', ids), sm = null;
           if (j.ok && j.found) sm = isKK(r) ? window.qatKk.score(r.facility_type.slice(3), j.data.answers) : cloud().nSum(r.facility_type, j.data.answers);
-          if (!sm) { bf.fail++; continue; }
+          if (!sm) { bf.fail++; S.bfSkip[r.key] = 1; continue; }
           var k = await cloud().api('summary', Object.assign({}, ids, { summary: sm }));
-          if (k.ok) { r.summary = sm; bf.done++; } else bf.fail++;
-        } catch (x) { bf.fail++; if (x && x.message === 'auth') { bf.stop = true; S.err = 'Your session has expired.'; } }
+          if (k.ok) { r.summary = sm; bf.done++; } else { bf.fail++; S.bfSkip[r.key] = 1; }
+        } catch (x) { bf.fail++; S.bfSkip[r.key] = 1; if (x && x.message === 'auth') { bf.stop = true; S.err = 'Your session has expired.'; } }
         if ((bf.done + bf.fail) % 4 === 0) paint();
       }
     }
     await Promise.all([lane(), lane()]);
     S.bf = null; paint();
-    if (typeof qatToast === 'function') qatToast('Scores calculated: ' + bf.done + (bf.fail ? ' · skipped ' + bf.fail : ''), bf.fail ? 'warn' : 'ok');
+    if (typeof qatToast === 'function' && (!auto || bf.done)) qatToast('Scores calculated: ' + bf.done + (bf.fail ? ' · skipped ' + bf.fail : ''), bf.fail ? 'warn' : 'ok');
   }
 
   /* ---------- events ---------- */
@@ -427,7 +429,7 @@
     else if (a === 'crumb') { S.path = S.path.slice(0, +v); S.q = ''; paint(); }
     else if (a === 'drill') { S.path = S.path.concat([v]); S.q = ''; paint(); }
     else if (a === 'tog') { var f = facs[+v]; if (f) { S.open[f.key] = !S.open[f.key]; paint(); } }
-    else if (a === 'bf') backfill();
+    else if (a === 'bf') backfill(false);
     else if (a === 'bfstop') { if (S.bf) S.bf.stop = true; }
     else if (a === 'open') openRec(S.rows[+v]);
     else if (a === 'del') delRec(S.rows[+v]);
