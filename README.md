@@ -62,7 +62,7 @@ Then bump `VERSION` in `sw.js` and push. Re-running `export` keeps earlier work 
 
 ## v33 – one record per assessment type
 * A saved record is identified by district + facility type + facility name + **assessment type** (Self / Internal 1-3 / Peer / District / State), so every round of a facility is kept separately.
-* **Saved assessments** (NQAS) and the Kayakalp saved list show every assessment of a facility with type, dates, assessors and last-saved time; search by facility, district or type.
+* **Saved NQAS assessments** (NQAS) and the Kayakalp saved list show every assessment of a facility with type, dates, assessors and last-saved time; search by facility, district or type.
 * This device keeps one working copy per facility type. When the Assessment type is switched and no cloud record exists for the new type, the app asks: start a blank assessment (the other one stays saved) or copy the current answers.
 * Server: replace `Code.gs` (see /Code.gs next to this zip), deploy a NEW VERSION, then run `migrateLegacyRecords` once.
 

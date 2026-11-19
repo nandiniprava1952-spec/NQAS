@@ -53,6 +53,8 @@ button,select,input,textarea{touch-action:manipulation}input,select,textarea{fon
   #nqasActions .btn.primary{background:var(--brand-600);border-color:var(--brand-600);color:#fff;font-weight:700}
   @media(max-width:700px){#nqasActions .btn{min-height:42px}}
   #nqasActions .btn.qat-save,#kayakalpPage .kk-b.qat-save{background:#166534;border-color:#4ade80;color:#fff;font-weight:700}
+  #nqasActions .btn.qat-new{background:#0e7490;border-color:#22d3ee;color:#fff;font-weight:700}
+  #nqasActions .btn.qat-new:hover{background:#0b5f78}
   #qatToast{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:10000;max-width:min(92vw,520px);padding:11px 16px;border-radius:10px;background:#1d1030;border:1px solid #7a4a9f;color:#fff;font:600 14px Calibri,Arial,sans-serif;box-shadow:0 6px 24px #0008;text-align:center}
   #qatToast.ok{border-color:#4ade80}#qatToast.warn{border-color:#fbbf24}
   .qat-status{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;width:100%;margin:0 0 10px}
@@ -697,7 +699,7 @@ button,select,input,textarea{touch-action:manipulation}input,select,textarea{fon
   @media (max-width:700px){
     #nqasActions .kk-row,#kayakalpPage .kk-row:has(#kkSave){display:grid !important;grid-template-columns:1fr 1fr;gap:8px;align-items:stretch;}
     #nqasActions .kk-row>.btn,#kayakalpPage .kk-row:has(#kkSave)>.kk-b{width:100%;min-width:0;min-height:46px;padding:8px 6px;text-align:center;white-space:normal;line-height:1.2;font-size:13.5px;display:flex;align-items:center;justify-content:center;}
-    #nqasActions #btnPrint,#nqasActions #btnPrint ~ .btn,#nqasActions .kk-row>.btn:last-of-type,#kayakalpPage #kkUp,#kayakalpPage #kkList,#kayakalpPage #kkType,#kayakalpPage #kkSt{grid-column:1 / -1;}
+    #kayakalpPage #kkType,#kayakalpPage #kkSt,#nqasActions #btnNewEntry{grid-column:1 / -1;}
     #kayakalpPage #kkType{width:100%;min-width:0 !important;min-height:44px;}
     #kayakalpPage #kkSt{text-align:left;}
   }
@@ -770,7 +772,7 @@ button,select,input,textarea{touch-action:manipulation}input,select,textarea{fon
 
 <div class="wrap" id="nqasActions"><div class="score-panel"><div class="kk-row">
           <button class="btn qat-save" id="btnSave" type="button">💾 Save</button>
-          <button class="btn" id="btnReset">Reset facility answers</button>
+          <button class="btn" id="btnReset">Reset answers</button>
           <button class="btn" id="btnDownloadBlank">Download Blank Checklist</button>
           <input type="file" id="xlsxTemplateInput" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" style="display:none;">
           <button class="btn" id="btnExport">Download Filled Checklist</button>
@@ -880,7 +882,7 @@ button,select,input,textarea{touch-action:manipulation}input,select,textarea{fon
 <div class="score-panel"><div class="section-title">Kayakalp — Clean Hospitals Assessment</div>
 <p class="kk-n" style="margin:0 0 10px">Uses the district / block / facility / assessment details selected in the bar above. Scoring: 0 Non-compliant · 1 Partial · 2 Compliant. Method: OB Observation · SI Staff Interview · PI Patient Interview · RR Record Review.</p>
 <div class="kk-row"><select id="kkType" style="min-width:270px;font-weight:700"><option value="">Select Kayakalp checklist…</option></select>
-<button class="kk-b qat-save" id="kkSave" type="button">💾 Save</button><button class="kk-b" id="kkReset">Reset answers</button><button class="kk-b" id="kkBlank">Download Blank</button><button class="kk-b" id="kkFill">Download Filled</button><button class="kk-b p" id="kkUp">Upload filled XLSX</button><input type="file" id="kkFile" accept=".xlsx" hidden><button class="kk-b" id="kkList">Saved Kayakalp assessments</button><span class="kk-n" id="kkSt"></span></div>
+<button class="kk-b qat-save" id="kkSave" type="button">💾 Save</button><button class="kk-b" id="kkBlank">Download Blank</button><button class="kk-b" id="kkFill">Download Filled</button><button class="kk-b p" id="kkUp">Upload filled XLSX</button><input type="file" id="kkFile" accept=".xlsx" hidden><button class="kk-b" id="kkList">Saved Kayakalp assessments</button><button class="kk-b" id="kkReset">Reset answers</button><span class="kk-n" id="kkSt"></span></div>
 <div id="kkSaved"></div></div>
 <div id="kkV1" class="kk-v on"><div class="score-panel" id="kkTop"></div><div id="kkListEl"></div></div>
 <div id="kkV2" class="kk-v"></div>
@@ -3006,7 +3008,7 @@ const hide=['btnReset','btnDownloadBlank','btnExport','btnPrint'].map(i=>$(i)).c
 function setComp(c){const kk=c==='kk';$('compNQAS').classList.toggle('on',!kk);$('compKK').classList.toggle('on',kk);sset('qat_component',c);
 hide.forEach(e=>e.style.cssText=kk?'display:none !important':orig.get(e));
 const kn=$('kkNav');if(kn){kn.style.display=kk?'':'none';kn.querySelectorAll('.page-tab').forEach(x=>x.classList.toggle('active',$(x.dataset.v).classList.contains('on')))}
-document.querySelectorAll('.toolbar button').forEach(b=>{if(/^Saved assessments/.test(b.textContent))b.style.display=kk?'none':''});
+document.querySelectorAll('.toolbar button').forEach(b=>{if(/^Saved NQAS assessments/.test(b.textContent))b.style.display=kk?'none':''});
 if(kk){document.querySelectorAll('.app-page').forEach(p=>p.classList.remove('active'));tabs.forEach(b=>b.classList.remove('active'));pg.classList.add('active');touch()}
 else{const t=tabs.find(b=>b.dataset.page===lastPage)||tabs[0];if(window.openNQASPage)window.openNQASPage(t.dataset.page,t);else{document.querySelectorAll('.app-page').forEach(p=>p.classList.remove('active'));$(t.dataset.page).classList.add('active');t.classList.add('active')}}}
 $('compNQAS').onclick=()=>setComp('nqas');$('compKK').onclick=()=>setComp('kk');
@@ -3063,7 +3065,7 @@ const tb=document.querySelector('.topbar .toolbar');
 /* status controls (☁ facility chip · Online · Sign out) live in the fixed top-right slot (#qatStR), outside .toolbar, so they stay put for NQAS and Kayakalp; the language toggle takes the top-left slot (#qatStL) */
 const sbar=document.getElementById('qatStR')||tb;
 function mkBtn(t,fn,host){const b=document.createElement('button');b.className='btn';b.textContent=t;b.onclick=fn;b.style.display='none';(host||tb).appendChild(b);return b;}
-const chip=mkBtn('☁',()=>needAuth?showLogin('Session expired – sign in to resume cloud sync.'):push(),sbar), listBtn=mkBtn('Saved assessments',openList,document.querySelector('#nqasActions .kk-row')||tb), outBtn=mkBtn('⏻ Sign out',signOut,sbar);
+const chip=mkBtn('☁',()=>needAuth?showLogin('Session expired – sign in to resume cloud sync.'):push(),sbar), listBtn=mkBtn('Saved NQAS assessments',openList,document.querySelector('#nqasActions .kk-row')||tb), outBtn=mkBtn('⏻ Sign out',signOut,sbar);{const rr=document.getElementById('btnReset');if(rr&&listBtn.parentNode===rr.parentNode)rr.parentNode.appendChild(rr);}{const nb=document.createElement('button');nb.type='button';nb.id='btnNewEntry';nb.className='btn qat-new';nb.textContent='+ New entry';nb.title='Start a new blank entry for this facility (the saved one is kept)';nb.onclick=()=>newEntry();const rr=document.getElementById('btnReset');(rr&&rr.parentNode||tb).appendChild(nb);}
 outBtn.innerHTML='<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none;display:block"><path d="M12 2v9"/><path d="M18.4 6.6a9 9 0 1 1-12.8 0"/></svg><span class="qat-so-t" style="margin-left:6px">Sign out</span>';outBtn.style.display='none';outBtn.title='Sign out';outBtn.setAttribute('aria-label','Sign out');outBtn.style.cssText+=';font-size:13px;font-weight:700;padding:6px 11px';
 const netB=document.createElement('span');netB.id='qatNet';netB.setAttribute('role','status');netB.style.cssText='display:inline-flex;align-items:center;justify-content:center;min-width:36px;height:36px;padding:0 12px;border-radius:18px;border:1px solid #ffffff33;flex:none;font:700 13px Calibri,Arial,sans-serif;white-space:nowrap';
 const grp=document.createElement('span');grp.style.cssText='display:inline-flex;gap:6px;align-items:center';grp.append(netB,outBtn);sbar.appendChild(grp);
@@ -3157,6 +3159,27 @@ async function push(idOv){
   try{const j=await api('push',Object.assign({},id,{data:snapshot(idOv),summary:nSum(currentFacility)})); ok=!!j.ok; if(ok)okSet(id); else dirty=true; setStatus(j.ok?'synced':'offline'); if(!j.ok)schedule(20000);}
   catch(e){ dirty=true; if(e.message!=='auth'){setStatus('offline');schedule(20000);} }
   pushing=false; return ok;
+}
+/* + New entry: upload the current assessment, then clear this screen for a fresh entry (facility, district and block stay; the Assessment type is cleared so the new entry gets its own type and never overwrites the saved one) */
+async function newEntry(){
+  if(!currentFacility){qatToast('Select a facility type first','warn');return;}
+  const id=profile?ident():null;
+  const msg=id?'Start a NEW entry for '+id.facility_name+'?\n\nThe current assessment stays saved in the cloud. The screen is cleared and you choose the Assessment type for the new entry.':'Start a NEW blank entry?\n\nYou are not signed in, so the answers on this device are not saved to the cloud and will be cleared. Download the filled checklist first if you need a copy.';
+  if(!confirm(msg))return;
+  if(id){clearTimeout(timer); if(!(await push())){alert('Your latest changes could not be uploaded yet (offline?). Try again once it shows "Synced".');return;}}
+  applying=true;
+  try{
+    answers[currentFacility]={}; saveAnswers(currentFacility);
+    const p=$('certPSS'); if(p){p.value=''; savePSS(currentFacility);}
+    if($('gdRemarks'))$('gdRemarks').value='';
+    ['metaAssessmentType','gdAssessmentType','metaStartDate','metaEndDate','metaAssessor1','metaAssessor2','metaDesig1','metaDesig2','gdStartDate','gdEndDate','gdAssessor1','gdAssessor2','gdDesig1','gdDesig2'].forEach(i=>{const e=$(i); if(e)e.value='';});
+    if($('metaAssessmentType'))$('metaAssessmentType').dispatchEvent(new Event('change',{bubbles:true}));
+    if(typeof updateAssessorFields==='function')updateAssessorFields();
+    renderAll(); if(typeof buildSummaryPage==='function')buildSummaryPage();
+  }finally{applying=false;}
+  clearTimeout(timer); dirty=false; lastKey='';
+  if(profile)setStatus('idle');
+  qatToast('New entry started – choose the Assessment type','ok');
 }
 /* explicit Save button: write to this device now, then upload right away */
 window.qatNeedAuth=()=>needAuth;

@@ -38,6 +38,7 @@
     'Open NQAS Upload Repository': 'NQAS ଅପଲୋଡ୍ ଭଣ୍ଡାର ଖୋଲନ୍ତୁ',
     'Reset facility answers': 'କେନ୍ଦ୍ରର ଉତ୍ତର ରିସେଟ୍ କରନ୍ତୁ',
     'Reset answers': 'ଉତ୍ତର ରିସେଟ୍ କରନ୍ତୁ',
+    '+ New entry': '+ ନୂଆ ଏଣ୍ଟ୍ରି',
     'Download Blank Checklist': 'ଖାଲି ଚେକ୍‌ଲିଷ୍ଟ ଡାଉନଲୋଡ୍',
     'Download Filled Checklist': 'ଭରାଯାଇଥିବା ଚେକ୍‌ଲିଷ୍ଟ ଡାଉନଲୋଡ୍',
     'Download Blank': 'ଖାଲି ଡାଉନଲୋଡ୍',
@@ -45,6 +46,7 @@
     'Upload External XLSX': 'ବାହ୍ୟ XLSX ଅପଲୋଡ୍ କରନ୍ତୁ',
     'Upload filled XLSX': 'ଭରାଯାଇଥିବା XLSX ଅପଲୋଡ୍',
     'Saved assessments': 'ସଞ୍ଚିତ ମୂଲ୍ୟାଙ୍କନ',
+    'Saved NQAS assessments': 'ସଞ୍ଚିତ NQAS ମୂଲ୍ୟାଙ୍କନ',
     'Saved Kayakalp assessments': 'ସଞ୍ଚିତ କାୟାକଳ୍ପ ମୂଲ୍ୟାଙ୍କନ',
 
     /* general-details bar */
