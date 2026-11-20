@@ -3037,7 +3037,7 @@ const API_URL='https://script.google.com/macros/s/AKfycbzA_0AzFoP7lbBcmodT3QU8g-
 /* ========================================================================== */
 const $=id=>document.getElementById(id), norm=s=>(s||'').trim().toLowerCase();
 const origSet=Storage.prototype.setItem, origRem=Storage.prototype.removeItem;
-let renFrom=null, token='', profile=null, lastKey='', timer=null, pushing=false, applying=false, needAuth=false, dirty=false, pulling=false;
+let renFrom=null, openKey=null, openStart='', token='', profile=null, lastKey='', timer=null, pushing=false, applying=false, needAuth=false, dirty=false, pulling=false;
 const schedule=ms=>{dirty=true;clearTimeout(timer);timer=setTimeout(()=>push(),ms==null?2000:ms);};
 /* a saved record = district + facility type + facility name + ASSESSMENT TYPE. This device keeps ONE working copy per facility type, so remember which record that copy was last in sync with (okId): when the assessment type is switched, the copy must not leak into the other assessment type's record. */
 const okGet=ft=>{try{return JSON.parse(localStorage.getItem('qat_ok_'+ft))}catch(e){return null}};
@@ -3221,8 +3221,8 @@ async function saveNow(){
 {const sb=$('btnSave'); if(sb) sb.onclick=saveNow;}
 async function pull(id){ if(pulling)return; pulling=true; try{await pull0(id);}finally{pulling=false;} }
 async function pull0(id){
-  setStatus('syncing'); let j;
-  try{j=await api('pull',id);}catch(e){ if(e.message!=='auth')setStatus('offline'); return; }
+  setStatus('syncing'); let j; const ok0=openKey, os0=openStart, explicit=!!ok0; openKey=null;
+  try{j=await api('pull',ok0?Object.assign({},id,{key:ok0,start_date:os0}):id);}catch(e){ if(e.message!=='auth')setStatus('offline'); return; }
   if(!j.ok){setStatus('offline');return;}
   const local=answers[currentFacility]||{}, hasLocal=Object.keys(local).length>0;
   const o=okGet(id.facility_type), sw=sameFacOtherType(o,id), prev=(o&&o.assessment_type)||'previous', now=id.assessment_type||'this';
@@ -3236,8 +3236,8 @@ async function pull0(id){
     if(sameFacOtherDate(o,id)&&o.start_date)renFrom=o.start_date;   /* start date corrected on the same assessment: re-key, don't fork */
     okSet(id);schedule(300);return;
   }
-  if(JSON.stringify(j.data.answers||{})===JSON.stringify(local)){okSet(id);setStatus('synced');return;}
-  if(!hasLocal||confirm('A cloud copy of this assessment exists (saved '+new Date(j.updated_at).toLocaleString()+' by '+(j.updated_by||'someone')+').'+(sw?'\n\nNote: this device currently holds the "'+prev+'" assessment.':'')+'\n\nOK = load the cloud copy (replaces this device\'s copy)\nCancel = keep this device\'s copy and upload it')){apply(j.data);okSet(id);} else {okSet(id);schedule(300);}
+  if(!explicit&&JSON.stringify(j.data.answers||{})===JSON.stringify(local)){okSet(id);setStatus('synced');return;}
+  if(!hasLocal||explicit||confirm('A cloud copy of this assessment exists (saved '+new Date(j.updated_at).toLocaleString()+' by '+(j.updated_by||'someone')+').'+(sw?'\n\nNote: this device currently holds the "'+prev+'" assessment.':'')+'\n\nOK = load the cloud copy (replaces this device\'s copy)\nCancel = keep this device\'s copy and upload it')){apply(j.data);const ni=ident()||id;okSet(ni);lastKey=JSON.stringify(ni);if(explicit){dirty=false;setStatus('synced');}} else {okSet(id);schedule(300);}
 }
 /* new assessment type with no cloud record: clear this device's working copy (answers, remarks, assessor names and dates) – facility, district and type stay */
 function startBlank(id){
@@ -3313,13 +3313,14 @@ async function openList(){
 async function openRec(r){
   if(dirty&&profile){clearTimeout(timer); const okp=await push(); if(!okp&&!confirm('Your latest changes could not be uploaded yet (offline?).\n\nOpen another assessment anyway? Unsynced changes on this device may be replaced.'))return;}
   ov.style.display='none'; const fd=$('facilityDropdown');
+  openKey=r.key||null; openStart=r.start_date||'';   /* load exactly the record that was tapped, whatever the form fields end up showing */
   if(profile.role==='admin'){const o=[...$('metaDistrictSel').options].find(o=>norm(o.textContent)===norm(r.district)); if(o){$('metaDistrictSel').value=o.value;$('metaDistrictSel').dispatchEvent(new Event('change'));}}
   const at=$('metaAssessmentType'); if(at){at.value=r.assessment_type||''; at.dispatchEvent(new Event('change',{bubbles:true}));}
   {const sd=$('metaStartDate'); if(sd)sd.value=r.start_date||'';}
   $('metaFacilitySel').disabled=profile.role==='facility'; $('metaFacilitySel').value=r.facility_name; $('metaFacilityName').value=r.facility_name;
   fd.value=r.facility_type;
-  if(fd.value!==r.facility_type){alert('This facility type is hidden right now. Set Assessment type to "Self" (for Virtual types) and open it again.');return;}
-  fd.dispatchEvent(new Event('change')); lastKey='';
+  if(fd.value!==r.facility_type){openKey=null; alert('This facility type is hidden right now. Set Assessment type to "Self" (for Virtual types) and open it again.');return;}
+  fd.dispatchEvent(new Event('change')); lastKey=''; clearTimeout(timer); dirty=false;   /* nothing from the old screen may be saved under the wrong key */
 }
 
 /* ---------- dashboard hooks (dashboard.js) ---------- */
