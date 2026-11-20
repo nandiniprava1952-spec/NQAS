@@ -137,11 +137,12 @@
   }
 /* one assessment (facility + type + date) can exist as several saved copies (older app versions, date added later): show only the latest saved copy */
   function latestCopies(rows) {
+    if (S.allCopies) return rows.map(function (r) { r._all = [r.key]; return r; });   /* "Show all copies": every saved row, nothing hidden */
     var best = {}, order = [], all = {};
     rows.forEach(function (r) {
       var k = [nz(r.district), nz(r.facility_type), nz(r.facility_name), nz(r.assessment_type), r.start_date || r.end_date || ''].join('|');
       (all[k] = all[k] || []).push(r.key);
-      if (!best[k]) { best[k] = r; order.push(k); } else if (String(r.updated_at) > String(best[k].updated_at)) best[k] = r;
+      if (!best[k]) { best[k] = r; order.push(k); } else if (!!r.start_date !== !!best[k].start_date ? !!r.start_date : String(r.updated_at) > String(best[k].updated_at)) best[k] = r;   /* a copy with a start date wins over an undated one, then the latest save */
     });
     return order.map(function (k) { best[k]._all = all[k]; return best[k]; });
   }
@@ -259,7 +260,7 @@
     var h = '';
     var ats = '<option value="">All assessment types</option>' + AT.map(function (t) { return '<option' + (S.at === t ? ' selected' : '') + ' value="' + e(t) + '">' + e(t) + '</option>'; }).join('');
     h += '<div class="qd-top"><h2>Dashboard<small class="no-i18n">' + e(scopeLabel()) + '</small></h2>' +
-      '<button class="qd-b" data-act="refresh"' + (S.bf ? ' disabled' : '') + '>Refresh</button><button class="qd-b" data-act="xlsx"' + (S.loaded ? '' : ' disabled') + '>Export XLSX</button><button class="qd-b p" data-act="close" id="qdClose">Close</button></div>' +
+      '<button class="qd-b" data-act="refresh"' + (S.bf ? ' disabled' : '') + '>Refresh</button><button class="qd-b" data-act="copies">' + (S.allCopies ? 'Show latest only' : 'Show all copies') + '</button><button class="qd-b" data-act="xlsx"' + (S.loaded ? '' : ' disabled') + '>Export XLSX</button><button class="qd-b p" data-act="close" id="qdClose">Close</button></div>' +
       '<div class="qd-seg" role="group" aria-label="Framework"><button data-act="fw" data-v="n" aria-pressed="' + (S.fw === 'n') + '">NQAS</button><button data-act="fw" data-v="k" aria-pressed="' + (S.fw === 'k') + '">Kayakalp</button></div>';
     if (!S.loaded) {
       h += S.err ? '<div class="qd-n err"><span>' + e(S.err) + '</span><button class="qd-b" data-act="refresh">Try again</button></div>' : '<div class="qd-e">Loading assessments…</div>';
@@ -424,6 +425,7 @@
     var a = b.dataset.act, v = b.dataset.v;
     if (a === 'close') close();
     else if (a === 'refresh') load();
+    else if (a === 'copies') { S.allCopies = !S.allCopies; paint(); }
     else if (a === 'xlsx') xlsx();
     else if (a === 'fw') { S.fw = v; S.ft = ''; S.q = ''; S.open = {}; initPath(); paint(); }
     else if (a === 'crumb') { S.path = S.path.slice(0, +v); S.q = ''; paint(); }
