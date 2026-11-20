@@ -79,6 +79,7 @@
     'Assessor 1 designation': 'ମୂଲ୍ୟାଙ୍କକ 1 ଙ୍କ ପଦବୀ',
     'Assessor 2 designation': 'ମୂଲ୍ୟାଙ୍କକ 2 ଙ୍କ ପଦବୀ',
     '💾 Save': '💾 ସେଭ୍ କରନ୍ତୁ',
+    '💾 Save to cloud': '💾 କ୍ଲାଉଡ୍‌ରେ ସେଭ୍ କରନ୍ତୁ',
     'Saving…': 'ସେଭ୍ ହେଉଛି…',
     '✔ Saved to cloud': '✔ କ୍ଲାଉଡ୍‌ରେ ସେଭ୍ ହେଲା',
     'Saved on this device. Sign in to also save to the cloud.': 'ଏହି ଡିଭାଇସ୍‌ରେ ସେଭ୍ ହେଲା। କ୍ଲାଉଡ୍‌ରେ ସେଭ୍ ପାଇଁ ସାଇନ୍ ଇନ୍ କରନ୍ତୁ।',
