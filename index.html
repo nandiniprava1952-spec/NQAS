@@ -699,7 +699,7 @@ button,select,input,textarea{touch-action:manipulation}input,select,textarea{fon
   @media (max-width:700px){
     #nqasActions .kk-row,#kayakalpPage .kk-row:has(#kkSave){display:grid !important;grid-template-columns:1fr 1fr;gap:8px;align-items:stretch;}
     #nqasActions .kk-row>.btn,#kayakalpPage .kk-row:has(#kkSave)>.kk-b{width:100%;min-width:0;min-height:46px;padding:8px 6px;text-align:center;white-space:normal;line-height:1.2;font-size:13.5px;display:flex;align-items:center;justify-content:center;}
-    #kayakalpPage #kkType,#kayakalpPage #kkSt,#nqasActions #btnNewEntry{grid-column:1 / -1;}
+    #kayakalpPage #kkType,#kayakalpPage #kkSt,#nqasActions #btnModify{grid-column:1 / -1;}
     #kayakalpPage #kkType{width:100%;min-width:0 !important;min-height:44px;}
     #kayakalpPage #kkSt{text-align:left;}
   }
@@ -3066,7 +3066,7 @@ const tb=document.querySelector('.topbar .toolbar');
 /* status controls (☁ facility chip · Online · Sign out) live in the fixed top-right slot (#qatStR), outside .toolbar, so they stay put for NQAS and Kayakalp; the language toggle takes the top-left slot (#qatStL) */
 const sbar=document.getElementById('qatStR')||tb;
 function mkBtn(t,fn,host){const b=document.createElement('button');b.className='btn';b.textContent=t;b.onclick=fn;b.style.display='none';(host||tb).appendChild(b);return b;}
-const chip=mkBtn('☁',()=>needAuth?showLogin('Session expired – sign in to resume cloud sync.'):push(),sbar), listBtn=mkBtn('Saved NQAS assessments',openList,document.querySelector('#nqasActions .kk-row')||tb), outBtn=mkBtn('⏻ Sign out',signOut,sbar);{const rr=document.getElementById('btnReset');if(rr&&listBtn.parentNode===rr.parentNode)rr.parentNode.appendChild(rr);}{const nb=document.createElement('button');nb.type='button';nb.id='btnNewEntry';nb.className='btn qat-new';nb.textContent='+ New entry';nb.title='Start a new blank entry for this facility (the saved one is kept)';nb.onclick=()=>newEntry();const rr=document.getElementById('btnReset');(rr&&rr.parentNode||tb).appendChild(nb);}
+const chip=mkBtn('☁',()=>needAuth?showLogin('Session expired – sign in to resume cloud sync.'):push(),sbar), listBtn=mkBtn('Saved NQAS assessments',openList,document.querySelector('#nqasActions .kk-row')||tb), outBtn=mkBtn('⏻ Sign out',signOut,sbar);{const rr=document.getElementById('btnReset');if(rr&&listBtn.parentNode===rr.parentNode)rr.parentNode.appendChild(rr);}{const nb=document.createElement('button');nb.type='button';nb.id='btnModify';nb.className='btn qat-new';nb.textContent='Modify';nb.title='Load the latest saved entry for this facility and modify it';nb.onclick=()=>modifyEntry();const rr=document.getElementById('btnReset');(rr&&rr.parentNode||tb).appendChild(nb);}
 outBtn.innerHTML='<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none;display:block"><path d="M12 2v9"/><path d="M18.4 6.6a9 9 0 1 1-12.8 0"/></svg><span class="qat-so-t" style="margin-left:6px">Sign out</span>';outBtn.style.display='none';outBtn.title='Sign out';outBtn.setAttribute('aria-label','Sign out');outBtn.style.cssText+=';font-size:13px;font-weight:700;padding:6px 11px';
 const netB=document.createElement('span');netB.id='qatNet';netB.setAttribute('role','status');netB.style.cssText='display:inline-flex;align-items:center;justify-content:center;min-width:36px;height:36px;padding:0 12px;border-radius:18px;border:1px solid #ffffff33;flex:none;font:700 13px Calibri,Arial,sans-serif;white-space:nowrap';
 const grp=document.createElement('span');grp.style.cssText='display:inline-flex;gap:6px;align-items:center';grp.append(netB,outBtn);sbar.appendChild(grp);
@@ -3161,51 +3161,20 @@ async function push(idOv){
   catch(e){ dirty=true; if(e.message!=='auth'){setStatus('offline');schedule(20000);} }
   pushing=false; return ok;
 }
-/* + New entry: upload the current assessment, then clear this screen for a fresh entry (facility, district and block stay; the Assessment type is cleared so the new entry gets its own type and never overwrites the saved one) */
-async function newEntry(){
+/* Modify: load the LATEST saved entry of this facility so it can be edited and saved over it. No new entry is created. */
+async function modifyEntry(){
   if(!currentFacility){qatToast('Select a facility type first','warn');return;}
-  if(!profile)return newEntryOld();
+  if(!profile){qatToast('Sign in to modify a saved entry','warn');return;}
   const id0=ident(); if(!id0){qatToast('Select the facility first','warn');return;}
-  if(NET()==='offline'){alert('Connect to the internet to start a new entry: the app must check whether an assessment already exists for that date.');return;}
-  clearTimeout(timer); if(!(await push())){alert('Your latest changes could not be uploaded yet (offline?). Try again once it shows "Synced".');return;}
-  const ats=[...(($('metaAssessmentType')||{}).options||[])].map(o=>o.value).filter(Boolean), types=ats.length?ats:AT_ORDER, today=new Date(Date.now()-new Date().getTimezoneOffset()*6e4).toISOString().slice(0,10);
-  box('<h3 style="margin:0 0 4px">New entry</h3><p style="margin:0 0 12px;opacity:.8;font-size:13px">'+esc2(id0.facility_name)+'</p><label>Assessment type</label><select id="neT" '+fld+'><option value="">Select\u2026</option>'+types.map(t=>'<option'+(t===id0.assessment_type?' selected':'')+'>'+esc2(t)+'</option>').join('')+'</select><label>Assessment start date</label><input id="neD" type="date" value="'+today+'" '+fld+'><div id="neM" style="color:#fb7185;min-height:18px;font-size:13px;margin-bottom:8px"></div><button id="neGo" class="btn primary" style="width:100%;padding:10px">Continue</button><button id="neX" class="btn" style="width:100%;padding:8px;margin-top:8px">Cancel</button>');
-  $('neX').onclick=()=>ov.style.display='none';
-  $('neGo').onclick=async()=>{
-    const t=$('neT').value,d=$('neD').value; if(!t||!d){$('neM').textContent='Choose the assessment type and the start date.';return;}
-    $('neM').textContent='Checking saved assessments\u2026'; let j; try{j=await api('list',{});}catch(e){if(e.message!=='auth')$('neM').textContent='Could not check the cloud. Try again when online.';return;}
-    const hit=(j.rows||[]).find(r=>r.facility_type===id0.facility_type&&norm(r.district)===norm(id0.district)&&norm(r.facility_name)===norm(id0.facility_name)&&norm(r.assessment_type)===norm(t)&&String(r.start_date||'')===d);
-    if(hit){
-      box('<h3 style="margin:0 0 6px">Assessment already started</h3><p style="font-size:14px;line-height:1.45;margin:0 0 14px">A <b>'+esc2(t)+'</b> assessment for <b>'+esc2(id0.facility_name)+'</b> dated <b>'+dmy(d)+'</b> already exists (last saved '+esc2(new Date(hit.updated_at).toLocaleString())+(hit.updated_by?' by '+esc2(hit.updated_by):'')+').<br>Open it to fill the remaining checkpoints and complete it.</p><button id="neOpen" class="btn primary" style="width:100%;padding:10px">Open &amp; continue</button><button id="neBack" class="btn" style="width:100%;padding:8px;margin-top:8px">Pick another date</button>');
-      $('neOpen').onclick=()=>openRec(hit); $('neBack').onclick=()=>newEntry(); return;
-    }
-    ov.style.display='none'; startBlank(id0);
-    applying=true;
-    try{const at=$('metaAssessmentType'); if(at){at.value=t; at.dispatchEvent(new Event('change',{bubbles:true}));} const sd=$('metaStartDate'); if(sd)sd.value=d; if($('gdStartDate'))$('gdStartDate').value=d; if($('gdAssessmentType'))$('gdAssessmentType').value=t;
-      if(typeof updateAssessorFields==='function')updateAssessorFields(); renderAll(); if(typeof buildSummaryPage==='function')buildSummaryPage();}finally{applying=false;}
-    const id=ident(); renFrom=null; if(id){okSet(id);lastKey=JSON.stringify(id);} dirty=false; setStatus('idle'); schedule(500);
-    qatToast('New '+t+' entry started for '+dmy(d),'ok');
-  };
-}
-async function newEntryOld(){
-  if(!currentFacility){qatToast('Select a facility type first','warn');return;}
-  const id=profile?ident():null;
-  const msg=id?'Start a NEW entry for '+id.facility_name+'?\n\nThe current assessment stays saved in the cloud. The screen is cleared and you choose the Assessment type for the new entry.':'Start a NEW blank entry?\n\nYou are not signed in, so the answers on this device are not saved to the cloud and will be cleared. Download the filled checklist first if you need a copy.';
-  if(!confirm(msg))return;
-  if(id){clearTimeout(timer); if(!(await push())){alert('Your latest changes could not be uploaded yet (offline?). Try again once it shows "Synced".');return;}}
-  applying=true;
-  try{
-    answers[currentFacility]={}; saveAnswers(currentFacility);
-    const p=$('certPSS'); if(p){p.value=''; savePSS(currentFacility);}
-    if($('gdRemarks'))$('gdRemarks').value='';
-    ['metaAssessmentType','gdAssessmentType','metaStartDate','metaEndDate','metaAssessor1','metaAssessor2','metaDesig1','metaDesig2','gdStartDate','gdEndDate','gdAssessor1','gdAssessor2','gdDesig1','gdDesig2'].forEach(i=>{const e=$(i); if(e)e.value='';});
-    if($('metaAssessmentType'))$('metaAssessmentType').dispatchEvent(new Event('change',{bubbles:true}));
-    if(typeof updateAssessorFields==='function')updateAssessorFields();
-    renderAll(); if(typeof buildSummaryPage==='function')buildSummaryPage();
-  }finally{applying=false;}
-  clearTimeout(timer); dirty=false; lastKey='';
-  if(profile)setStatus('idle');
-  qatToast('New entry started – choose the Assessment type','ok');
+  if(NET()==='offline'){alert('Connect to the internet to load the latest saved entry.');return;}
+  if(dirty){clearTimeout(timer); if(!(await push())){alert('Your latest changes could not be uploaded yet (offline?). Try again once it shows "Synced".');return;}}
+  let j; try{j=await api('list',{});}catch(e){if(e.message!=='auth')qatToast('Could not check the cloud. Try again when online.','warn');return;}
+  if(!j||!j.ok){qatToast('Could not check the cloud. Try again when online.','warn');return;}
+  const mine=(j.rows||[]).filter(r=>r.facility_type===id0.facility_type&&norm(r.district)===norm(id0.district)&&norm(r.facility_name)===norm(id0.facility_name));
+  if(!mine.length){qatToast('No saved entry for this facility yet','warn');return;}
+  mine.sort((x,y)=>String(y.updated_at).localeCompare(String(x.updated_at)));
+  await openRec(mine[0]);
+  qatToast('Latest saved entry loaded – you can now modify it','ok');
 }
 /* explicit Save button: write to this device now, then upload right away */
 window.qatNeedAuth=()=>needAuth;

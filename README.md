@@ -75,3 +75,9 @@ Then bump `VERSION` in `sw.js` and push. Re-running `export` keeps earlier work 
 * Server: replace `Code.gs`, deploy a NEW VERSION. The `summary` column is added automatically; nothing else to run.
 * The dashboard text is English only for now.
 * v36: the dashboard shows a score column for every round (Self, IA 1, IA 2, IA 3, Peer, District, State). Facility rows show that facility's score per round; district and block rows show the average per round and how many facilities it is based on.
+
+
+## v50 – Modify + latest-only dashboard
+* The **+ New entry** button is now **Modify**: it loads the facility's latest saved entry so it can be edited and saved over it. It never starts a blank entry.
+* The dashboard shows only the **latest saved record of each facility** (older saves are hidden; the per-round columns and “Show all copies” are gone). Delete removes the latest record together with its older hidden saves.
+* No server change: keep your current Code.gs deployment. Bump `VERSION` in `sw.js` (done: v50) and push.

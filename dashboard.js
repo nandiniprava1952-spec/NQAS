@@ -61,7 +61,7 @@
       '.qd-n{background:#2d1942;border:1px solid #6b3a8f;border-radius:10px;padding:10px 12px;margin-bottom:12px;font-size:13.5px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}' +
       '.qd-n.err{background:#3b1724;border-color:#fb7185}.qd-n span{flex:1 1 220px}' +
       '.qd-t{overflow-x:auto;border:1px solid #4b2868;border-radius:10px;background:#1d1030}' +
-      '.qd-t table{width:100%;border-collapse:collapse;font-size:13.5px;min-width:1080px}' +
+      '.qd-t table{width:100%;border-collapse:collapse;font-size:13.5px;min-width:760px}' +
       '.qd-t th{text-align:left;font-weight:600;font-size:12px;opacity:.75;padding:9px 10px;border-bottom:1px solid #4b2868;white-space:nowrap}' +
       '.qd-t td{padding:9px 10px;border-top:1px solid #32134f;vertical-align:middle}' +
       '.qd-t tr:first-child td{border-top:0}' +
@@ -137,7 +137,6 @@
   }
 /* one assessment (facility + type + date) can exist as several saved copies (older app versions, date added later): show only the latest saved copy */
   function latestCopies(rows) {
-    if (S.allCopies) return rows.map(function (r) { r._all = [r.key]; return r; });   /* "Show all copies": every saved row, nothing hidden */
     var best = {}, order = [], all = {};
     rows.forEach(function (r) {
       var k = [nz(r.district), nz(r.facility_type), nz(r.facility_name), nz(r.assessment_type), r.start_date || r.end_date || ''].join('|');
@@ -146,7 +145,7 @@
     });
     return order.map(function (k) { best[k]._all = all[k]; return best[k]; });
   }
-  function derive() {
+  function derive(noFt) {
     var out = [], k3 = {}, k2 = {}, ex = {};
     roster().forEach(function (f) {
       var o = { district: f.district, block: f.block, name: f.name, gt: f.gt, t: f.t, recs: [] };
@@ -163,6 +162,11 @@
     });
     out.forEach(function (f) {
       f.recs.sort(function (a, b) { return a.updated_at < b.updated_at ? 1 : -1; });
+      if (f.recs.length > 1) {   /* only the latest saved record of a facility is shown; older ones are hidden (Delete removes them together with it) */
+        var ks = [];
+        f.recs.forEach(function (r) { (r._all || [r.key]).forEach(function (k) { if (k && ks.indexOf(k) < 0) ks.push(k); }); });
+        f.recs[0]._all = ks; f.recs = [f.recs[0]];
+      }
       f.latest = f.recs[0] || null;
       var sm = f.latest && f.latest.summary;
       f.comp = sm && sm.t ? sm.n / sm.t : null;
@@ -170,27 +174,13 @@
       f.st = !f.recs.length ? 'none' : f.score != null ? 'scored' : 'started';
       f.key = nz(f.district) + '|' + nz(f.block) + '|' + nz(f.name) + '|' + f.gt;
     });
-    return out.filter(function (f) { return !S.ft || f.gt === S.ft; });
+    return noFt ? out : out.filter(function (f) { return !S.ft || f.gt === S.ft; });
   }
-  /* the facility's record for one assessment round (latest saved) and its score */
-  function round(f, t) {
-    var r = null;
-    for (var i = 0; i < f.recs.length; i++) if (f.recs[i].assessment_type === t) { r = f.recs[i]; break; }
-    if (!r) return null;
-    var sm = r.summary, ok = sm && sm.n > 0 && sm.t && sm.n / sm.t >= S.minc;
-    return { r: r, p: ok ? sm.p : null };
-  }
-  function rcell(x) {
-    if (!x) return '<td class="n"><span class="na">—</span></td>';
-    return x.p != null ? '<td class="n ' + band(x.p) + '"><b>' + r1(x.p) + '%</b></td>' : '<td class="n"><span class="na" title="Saved, no score counted yet">saved</span></td>';
-  }
-  function rhead() { return AT.map(function (t) { return '<th class="n">' + e(AT_S[t]) + '</th>'; }).join(''); }
   function areaKey() { return S.fw === 'n' ? 'aoc' : 'th'; }
   function agg(list) {
-    var a = { total: list.length, assessed: 0, scored: 0, sum: 0, below: 0, last: '', ar: {}, rd: {} }, ac = {}, rs = {};
+    var a = { total: list.length, assessed: 0, scored: 0, sum: 0, below: 0, last: '', ar: {} }, ac = {};
     list.forEach(function (f) {
       if (f.recs.length) a.assessed++;
-      AT.forEach(function (t) { var x = round(f, t); if (x && x.p != null) { (rs[t] = rs[t] || [0, 0]); rs[t][0] += x.p; rs[t][1]++; } });
       if (f.latest && f.latest.updated_at > a.last) a.last = f.latest.updated_at;
       if (f.score != null) {
         a.scored++; a.sum += f.score; if (f.score < PASS) a.below++;
@@ -199,7 +189,6 @@
       }
     });
     a.avg = a.scored ? a.sum / a.scored : null;
-    Object.keys(rs).forEach(function (t) { a.rd[t] = { avg: rs[t][0] / rs[t][1], n: rs[t][1] }; });
     Object.keys(ac).forEach(function (k) { a.ar[k] = ac[k][0] / ac[k][1]; });
     return a;
   }
@@ -252,7 +241,8 @@
   function inPath(f) {
     return (S.path.length < 1 || nz(f.district) === nz(S.path[0])) && (S.path.length < 2 || nz(f.block) === nz(S.path[1]));
   }
-  function pending() { return latestCopies(S.rows).filter(function (r) { return (S.fw === 'k' ? isKK(r) : !isKK(r)) && !r.summary; }).length; }   /* counts only the copies the dashboard shows */
+  function shown() { return derive(true).map(function (f) { return f.latest; }).filter(Boolean); }   /* the latest saved record of each facility = what the dashboard shows */
+  function pending() { return shown().filter(function (r) { return !r.summary; }).length; }
 
   function paint() {
     if (!ov) return;
@@ -260,7 +250,7 @@
     var h = '';
     var ats = '<option value="">All assessment types</option>' + AT.map(function (t) { return '<option' + (S.at === t ? ' selected' : '') + ' value="' + e(t) + '">' + e(t) + '</option>'; }).join('');
     h += '<div class="qd-top"><h2>Dashboard<small class="no-i18n">' + e(scopeLabel()) + '</small></h2>' +
-      '<button class="qd-b" data-act="refresh"' + (S.bf ? ' disabled' : '') + '>Refresh</button><button class="qd-b" data-act="copies">' + (S.allCopies ? 'Show latest only' : 'Show all copies') + '</button><button class="qd-b" data-act="xlsx"' + (S.loaded ? '' : ' disabled') + '>Export XLSX</button><button class="qd-b p" data-act="close" id="qdClose">Close</button></div>' +
+      '<button class="qd-b" data-act="refresh"' + (S.bf ? ' disabled' : '') + '>Refresh</button><button class="qd-b" data-act="xlsx"' + (S.loaded ? '' : ' disabled') + '>Export XLSX</button><button class="qd-b p" data-act="close" id="qdClose">Close</button></div>' +
       '<div class="qd-seg" role="group" aria-label="Framework"><button data-act="fw" data-v="n" aria-pressed="' + (S.fw === 'n') + '">NQAS</button><button data-act="fw" data-v="k" aria-pressed="' + (S.fw === 'k') + '">Kayakalp</button></div>';
     if (!S.loaded) {
       h += S.err ? '<div class="qd-n err"><span>' + e(S.err) + '</span><button class="qd-b" data-act="refresh">Try again</button></div>' : '<div class="qd-e">Loading assessments…</div>';
@@ -309,26 +299,26 @@
       Object.keys(map).forEach(function (n) { gs.push({ name: n, a: agg(map[n]) }); });
       gs = gs.filter(function (g) { return !q || nz(g.name).indexOf(q) >= 0; });
       sortGroups(gs);
-      h += '<div class="qd-t"><table><thead><tr><th>' + (level === 0 ? 'District' : 'Block') + '</th><th>Assessed</th>' + rhead() + '<th class="n">Avg score</th><th>Areas</th><th class="n">Below ' + PASS + '%</th><th class="n">Last saved</th></tr></thead><tbody>' +
+      h += '<div class="qd-t"><table><thead><tr><th>' + (level === 0 ? 'District' : 'Block') + '</th><th>Assessed</th><th class="n">Avg score</th><th>Areas</th><th class="n">Below ' + PASS + '%</th><th class="n">Last saved</th></tr></thead><tbody>' +
         (gs.length ? gs.map(function (g) {
-          return '<tr><td><button class="qd-l no-i18n" data-act="drill" data-v="' + e(g.name) + '">' + e(g.name) + '</button><span class="qd-sub">' + g.a.total + ' facilities</span></td><td>' + cover(g.a) + '</td>' + AT.map(function (t) { var x = g.a.rd[t]; return x ? '<td class="n ' + band(x.avg) + '"><b>' + r1(x.avg) + '%</b><span class="qd-sub">' + x.n + ' facilit' + (x.n === 1 ? 'y' : 'ies') + '</span></td>' : '<td class="n"><span class="na">—</span></td>'; }).join('') + '<td class="n ' + band(g.a.avg) + '"><b>' + pc(g.a.avg) + '</b></td><td>' + strip(g.a.ar) + '</td><td class="n ' + (g.a.below ? 'bad' : '') + '">' + g.a.below + '</td><td class="n">' + dtm(g.a.last) + '</td></tr>';
-        }).join('') : '<tr><td colspan="13" class="qd-e">Nothing matches these filters.</td></tr>') + '</tbody></table></div>';
+          return '<tr><td><button class="qd-l no-i18n" data-act="drill" data-v="' + e(g.name) + '">' + e(g.name) + '</button><span class="qd-sub">' + g.a.total + ' facilities</span></td><td>' + cover(g.a) + '</td><td class="n ' + band(g.a.avg) + '"><b>' + pc(g.a.avg) + '</b></td><td>' + strip(g.a.ar) + '</td><td class="n ' + (g.a.below ? 'bad' : '') + '">' + g.a.below + '</td><td class="n">' + dtm(g.a.last) + '</td></tr>';
+        }).join('') : '<tr><td colspan="6" class="qd-e">Nothing matches these filters.</td></tr>') + '</tbody></table></div>';
     } else {
       var fs = inScope.filter(function (f) { return !q || nz(f.name).indexOf(q) >= 0; });
       sortFacs(fs);
       var STX = { none: 'Not started', started: 'Started', scored: 'Scored' };
-      h += '<div class="qd-t"><table><thead><tr><th>Facility</th><th>Status</th>' + rhead() + '<th class="n">Answered</th><th class="n">Latest score</th><th>Areas</th><th class="n">Last saved</th></tr></thead><tbody>' +
+      h += '<div class="qd-t"><table><thead><tr><th>Facility</th><th>Status</th><th>Assessment</th><th class="n">Answered</th><th class="n">Score</th><th>Areas</th><th class="n">Last saved</th></tr></thead><tbody>' +
         (fs.length ? fs.map(function (f) {
           var sm = f.latest && f.latest.summary, op = S.open[f.key], idx = facs.indexOf(f);
           var row = '<tr><td><button class="qd-l no-i18n" data-act="tog" data-v="' + idx + '" aria-expanded="' + !!op + '">' + (f.recs.length ? (op ? '▾ ' : '▸ ') : '') + e(f.name) + '</button><span class="qd-sub no-i18n">' + e(f.gt) + (S.path.length < 2 ? '' : '') + '</span></td>' +
-            '<td><span class="qd-st ' + f.st + '">' + STX[f.st] + '</span></td>' + AT.map(function (t) { return rcell(round(f, t)); }).join('') +
+            '<td><span class="qd-st ' + f.st + '">' + STX[f.st] + '</span></td><td>' + (f.latest ? e(f.latest.assessment_type || '\u2014') + (f.latest.start_date ? '<span class="qd-sub">' + e(dmy(f.latest.start_date)) + '</span>' : '') : '<span class="na">\u2014</span>') + '</td>' +
             '<td class="n">' + (f.comp != null ? Math.round(f.comp * 100) + '%' : '—') + '</td><td class="n ' + band(f.score) + '"><b>' + pc(f.score) + '</b></td>' +
-            '<td>' + strip(sm && sm[areaKey()]) + '</td><td class="n">' + (f.latest ? dtm(f.latest.updated_at) + '<span class="qd-sub">' + e((f.latest.assessment_type || '') + (f.latest.start_date ? ' \u00b7 ' + dmy(f.latest.start_date) : '')) + (f.latest.updated_by ? ' \u00b7 by ' + e(f.latest.updated_by) : '') + '</span>' : '—') + '</td></tr>';
-          if (op && f.recs.length) row += '<tr class="qd-x"><td colspan="13">' + detail(f) + '</td></tr>';
+            '<td>' + strip(sm && sm[areaKey()]) + '</td><td class="n">' + (f.latest ? dtm(f.latest.updated_at) + '<span class="qd-sub">' + (f.latest.updated_by ? 'by ' + e(f.latest.updated_by) : '') + '</span>' : '—') + '</td></tr>';
+          if (op && f.recs.length) row += '<tr class="qd-x"><td colspan="7">' + detail(f) + '</td></tr>';
           return row;
-        }).join('') : '<tr><td colspan="13" class="qd-e">No facilities match these filters.</td></tr>') + '</tbody></table></div>';
+        }).join('') : '<tr><td colspan="7" class="qd-e">No facilities match these filters.</td></tr>') + '</tbody></table></div>';
     }
-    h += '<p class="qd-fn">A facility’s score comes from its most recently saved assessment that matches the filters. Average score is the mean of those facility scores; facilities without a score are left out of it. “Not started” facilities come from the facility list in the app; assessments saved for a facility that is not in that list (for example some district hospitals) are still counted.</p>';
+    h += '<p class="qd-fn">Each facility shows only its latest saved assessment (matching the filters) – earlier saves are not shown. Average score is the mean of those facility scores; facilities without a score are left out of it. “Not started” facilities come from the facility list in the app; assessments saved for a facility that is not in that list (for example some district hospitals) are still counted.</p>';
     w.innerHTML = h; ov.scrollTop = sc;
   }
 
@@ -349,15 +339,13 @@
     var fs = derive().filter(inPath), ak = {}, rows = [];
     fs.forEach(function (f) { f.recs.forEach(function (r) { var ar = r.summary && r.summary[areaKey()]; if (ar) Object.keys(ar).forEach(function (k) { ak[k] = 1; }); }); });
     var keys = Object.keys(ak).sort();
-    var head = ['District', 'Block', 'Facility', 'Facility type', 'Status', 'Assessments done', 'Latest assessment', 'Latest saved', 'Answered %', 'Overall score %']
-      .concat(keys.map(function (k) { return (S.fw === 'n' ? 'AoC ' : 'Theme ') + k + ' %'; })).concat(AT.map(function (t) { return t + ' score %'; }));
+    var head = ['District', 'Block', 'Facility', 'Facility type', 'Status', 'Assessment', 'Start date', 'Last saved', 'Answered %', 'Score %']
+      .concat(keys.map(function (k) { return (S.fw === 'n' ? 'AoC ' : 'Theme ') + k + ' %'; }));
     rows.push(head);
     fs.forEach(function (f) {
       var sm = f.latest && f.latest.summary, ar = (sm && sm[areaKey()]) || {};
-      var byT = {}; f.recs.forEach(function (r) { if (!(r.assessment_type in byT)) byT[r.assessment_type] = r; });
-      rows.push([f.district, f.block, f.name, f.gt, { none: 'Not started', started: 'Started', scored: 'Scored' }[f.st], f.recs.length, f.latest ? f.latest.assessment_type : '', f.latest ? dtm(f.latest.updated_at) : '',
-        f.comp != null ? Math.round(f.comp * 100) : '', f.score != null ? r1(f.score) : ''].concat(keys.map(function (k) { return ar[k] != null ? r1(ar[k]) : ''; }))
-        .concat(AT.map(function (t) { var r = byT[t], s = r && r.summary; return s && s.n > 0 ? r1(s.p) : ''; })));
+      rows.push([f.district, f.block, f.name, f.gt, { none: 'Not started', started: 'Started', scored: 'Scored' }[f.st], f.latest ? f.latest.assessment_type : '', f.latest ? dmy(f.latest.start_date) : '', f.latest ? dtm(f.latest.updated_at) : '',
+        f.comp != null ? Math.round(f.comp * 100) : '', f.score != null ? r1(f.score) : ''].concat(keys.map(function (k) { return ar[k] != null ? r1(ar[k]) : ''; })));
     });
     if (typeof XLSX === 'undefined') { if (typeof qatToast === 'function') qatToast('Excel library not loaded - reload the app and try again', 'warn'); return; }
     var recRows = [['District', 'Block', 'Facility', 'Facility type', 'Assessment', 'Start date', 'End date', 'Assessors', 'Last saved', 'Saved by', 'Answered', 'Total checkpoints', 'Answered %', 'Score %']];
@@ -396,7 +384,7 @@
   /* fill the score summary of records saved before the dashboard existed (pull each record, score it, store only the summary) */
   async function backfill(auto) {   /* auto = runs by itself after the list loads; records that failed once are not retried until the next full open */
     S.bfSkip = S.bfSkip || {};
-    var todo = latestCopies(S.rows).filter(function (r) { return (S.fw === 'k' ? isKK(r) : !isKK(r)) && !r.summary && !(auto && S.bfSkip[r.key]); });
+    var todo = shown().filter(function (r) { return !r.summary && !(auto && S.bfSkip[r.key]); });
     if (!todo.length || S.bf) return;
     S.bf = { n: todo.length, done: 0, fail: 0, stop: false }; paint();
     var i = 0, bf = S.bf;
@@ -425,7 +413,6 @@
     var a = b.dataset.act, v = b.dataset.v;
     if (a === 'close') close();
     else if (a === 'refresh') load();
-    else if (a === 'copies') { S.allCopies = !S.allCopies; paint(); }
     else if (a === 'xlsx') xlsx();
     else if (a === 'fw') { S.fw = v; S.ft = ''; S.q = ''; S.open = {}; initPath(); paint(); }
     else if (a === 'crumb') { S.path = S.path.slice(0, +v); S.q = ''; paint(); }
@@ -447,7 +434,7 @@
     var keys = (r._all || [r.key]).filter(Boolean);
     if (!keys.length) { if (typeof qatToast === 'function') qatToast('Refresh the dashboard and try again', 'warn'); return; }
     var dt = r.start_date || r.end_date;
-    if (!confirm('Delete the ' + (r.assessment_type || 'saved') + ' assessment' + (dt ? ' of ' + dmy(dt) : '') + ' for ' + r.facility_name + '?' + (keys.length > 1 ? '\n\n(' + keys.length + ' saved copies of it will be removed.)' : '') + '\n\nThis cannot be undone.')) return;
+    if (!confirm('Delete the ' + (r.assessment_type || 'saved') + ' assessment' + (dt ? ' of ' + dmy(dt) : '') + ' for ' + r.facility_name + '?' + (keys.length > 1 ? '\n\n(This also removes ' + (keys.length - 1) + ' older saved record' + (keys.length === 2 ? '' : 's') + ' of this facility.)' : '') + '\n\nThis cannot be undone.')) return;
     try {
       var j = await cloud().api('delete', { keys: keys });
       if (!j.ok) { alert(j.error || 'Could not delete.'); return; }
