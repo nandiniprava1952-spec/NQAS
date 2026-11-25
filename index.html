@@ -718,7 +718,7 @@ button,select,input,textarea{touch-action:manipulation}input,select,textarea{fon
 <body>
 <div class="topbar">
   <div class="topbar-inner">
-    <div class="qat-status" id="qatStatus"><div class="qat-st-l" id="qatStL"></div><div class="qat-st-m" id="qatStM"><button type="button" class="comp comp-home" id="compHome" title="Cover page">⌂ Home</button></div><div class="qat-st-r" id="qatStR"></div></div>
+    <div class="qat-status" id="qatStatus"><div class="qat-st-l" id="qatStL"></div><div class="qat-st-m" id="qatStM"><button type="button" class="comp comp-home" id="compHome" title="Cover page">⌂ Home</button><button type="button" class="comp comp-home" id="compNew" title="Open a fresh blank NQAS form">+ New entry</button></div><div class="qat-st-r" id="qatStR"></div></div>
     <div class="brand-row">
       <div class="brand">
         <h1>Quality Assessment Toolkit</h1>
@@ -858,7 +858,7 @@ button,select,input,textarea{touch-action:manipulation}input,select,textarea{fon
 <div class="wrap"><div class="score-panel"><div class="section-title">NQAS Upload Repository</div><p style="margin:0 0 14px;color:#76543b;font-size:13px;line-height:1.5">Select a checklist workbook to make it the active template for <strong>Download Blank Checklist</strong> and <strong>Download Filled Checklist</strong>. The original workbook structure and formatting are retained as far as ExcelJS supports. The SDH entry is a DH-style adapted template; it is not presented as a separate NHSRC-issued SDH workbook.</p><div id="repositoryGrid" class="repository-grid"></div><div id="repositoryStatus" class="repo-status">No repository template selected yet.</div><div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap"><button class="btn" id="btnRepositoryUploadLocal">Upload XLSX from Computer</button><button class="btn" id="btnRepositoryClear">Clear Selected Template</button><button class="btn primary" id="btnDownloadAllBlank">Download All Blank Checklists (ZIP)</button></div></div></div></div>
 
 <style id="kk-css">
-.comp-switch{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}.comp{padding:9px 24px;border-radius:10px;border:1px solid rgba(255,255,255,.55);background:rgba(255,255,255,.12);color:#fff;font:700 14.5px Calibri,Arial,sans-serif;cursor:pointer}.comp:hover{background:rgba(255,255,255,.22)}.comp.on{background:#fff;color:#32134f;border-color:#fff}.qat-st-m{flex:1 1 auto;display:flex;justify-content:center;align-items:center;min-width:0}.comp.comp-home{padding:0 16px;height:36px;min-height:36px;font-size:13.5px;white-space:nowrap}
+.comp-switch{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}.comp{padding:9px 24px;border-radius:10px;border:1px solid rgba(255,255,255,.55);background:rgba(255,255,255,.12);color:#fff;font:700 14.5px Calibri,Arial,sans-serif;cursor:pointer}.comp:hover{background:rgba(255,255,255,.22)}.comp.on{background:#fff;color:#32134f;border-color:#fff}.qat-st-m{flex:1 1 auto;display:flex;justify-content:center;align-items:center;min-width:0}.comp.comp-home{padding:0 16px;height:36px;min-height:36px;font-size:13.5px;white-space:nowrap}.qat-st-m{gap:8px}#compNew{background:#0e7490;border-color:#22d3ee66;color:#fff}
 #kayakalpPage{--kg:#4ade80;--km:#fbbf24;--kb:#fb7185}
 #kayakalpPage .kk-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 #kayakalpPage .kk-b{border:1px solid #7a4a9f;background:#ffffff14;color:var(--ink);padding:7px 12px;border-radius:8px;font:inherit;font-size:13px;cursor:pointer}#kayakalpPage .kk-b:hover{background:#ffffff2a}#kayakalpPage .kk-b.p{background:var(--brand-600);border-color:var(--brand-600);color:#fff;font-weight:700}
@@ -3299,6 +3299,24 @@ function forget(r){ try{ const id=profile?ident():null; if(!id||id.facility_type
   clearTimeout(timer); startBlank(id); applying=true;
   try{['metaAssessmentType','gdAssessmentType','metaStartDate','gdStartDate'].forEach(i=>{const e=$(i);if(e)e.value='';}); const at=$('metaAssessmentType'); if(at)at.dispatchEvent(new Event('change',{bubbles:true}));}finally{applying=false;}
   dirty=false; clearTimeout(timer); const n=ident(); lastKey=n?JSON.stringify(n):''; }catch(e){} }
+/* "+ New entry" (top bar, next to Home): open a fresh blank form for the selected facility. Answers, remarks, assessors and dates are cleared; the start date is set to today so the new entry gets its own record, and if one already exists for that date the normal check loads it instead of overwriting it. */
+async function freshForm(){
+  const cov=$('cvN'), kk=$('compKK');
+  if(cov&&cov.offsetParent!==null)cov.click();   /* leave the cover page */
+  else if(kk&&kk.classList.contains('on')){qatToast('New entry opens a separate record in NQAS. Kayakalp keeps one record per assessment type; use Reset answers there.','warn');return;}
+  else{const nq=$('compNQAS'); if(nq&&!nq.classList.contains('on'))nq.click();}
+  if(!currentFacility){qatToast('Select a facility type first','warn');return;}
+  const id0=profile?ident():null;
+  if(id0){ clearTimeout(timer); if(dirty&&!(await push())){alert('Your latest changes could not be uploaded yet (offline?). Try again once it shows "Synced".');return;} }
+  else if(!confirm('This clears the answers on this device for this facility. Start a new blank entry?'))return;
+  startBlank(id0||{facility_type:currentFacility});
+  const today=new Date(Date.now()-new Date().getTimezoneOffset()*6e4).toISOString().slice(0,10);
+  applying=true; try{['metaStartDate','gdStartDate'].forEach(i=>{const e=$(i); if(e)e.value=today;});}finally{applying=false;}
+  lastKey=''; renFrom=null; openKey=null;
+  const tab=document.querySelector('[data-page="assessmentPage"]'); if(tab)tab.click(); window.scrollTo(0,0);
+  qatToast('New blank entry ready. Set the start date; if one already exists for that date it will open.','ok');
+}
+const newB=$('compNew'); if(newB)newB.onclick=freshForm;
 window.qatCloud={api:(a,p)=>api(a,p),profile:()=>profile,openRec,nSum,forget};
 const dashB=$('compDash');if(dashB)dashB.onclick=()=>{if(window.qatDashboard)window.qatDashboard.open();};
 
