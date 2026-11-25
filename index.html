@@ -3305,16 +3305,27 @@ async function freshForm(){
   if(cov&&cov.offsetParent!==null)cov.click();   /* leave the cover page */
   else if(kk&&kk.classList.contains('on')){qatToast('New entry opens a separate record in NQAS. Kayakalp keeps one record per assessment type; use Reset answers there.','warn');return;}
   else{const nq=$('compNQAS'); if(nq&&!nq.classList.contains('on'))nq.click();}
-  if(!currentFacility){qatToast('Select a facility type first','warn');return;}
-  const id0=profile?ident():null;
+  const id0=(profile&&currentFacility)?ident():null;
   if(id0){ clearTimeout(timer); if(dirty&&!(await push())){alert('Your latest changes could not be uploaded yet (offline?). Try again once it shows "Synced".');return;} }
-  else if(!confirm('This clears the answers on this device for this facility. Start a new blank entry?'))return;
-  startBlank(id0||{facility_type:currentFacility});
-  const today=new Date(Date.now()-new Date().getTimezoneOffset()*6e4).toISOString().slice(0,10);
-  applying=true; try{['metaStartDate','gdStartDate'].forEach(i=>{const e=$(i); if(e)e.value=today;});}finally{applying=false;}
-  lastKey=''; renFrom=null; openKey=null;
+  else if(currentFacility&&!confirm('This clears the answers on this device for this facility. Start a new blank entry?'))return;
+  if(currentFacility)startBlank(id0||{facility_type:currentFacility});
+  /* blank EVERY field: assessment type, facility type, district, block, facility, assessors, dates */
+  applying=true;
+  try{
+    const set=(i,v)=>{const e=$(i); if(e&&!e.disabled)e.value=v;};
+    ['metaAssessmentType','gdAssessmentType'].forEach(i=>set(i,''));
+    currentFacility=''; const fd=$('facilityDropdown'); if(fd)fd.value='';
+    const ds=$('metaDistrictSel'); if(ds&&!ds.disabled){ds.value='';ds.dispatchEvent(new Event('change',{bubbles:true}));}   /* resets block + facility lists */
+    const bs=$('metaBlockSel'); if(bs&&!bs.disabled){bs.value='';bs.dispatchEvent(new Event('change',{bubbles:true}));}
+    const fs=$('metaFacilitySel'); if(fs&&!fs.disabled){fs.value='';$('metaFacilityName').value='';}
+    ['metaFacilityName','metaDistrict','metaBlock'].forEach(i=>{const e=$(i); if(e&&!(i==='metaDistrict'&&ds&&ds.disabled)&&!(i==='metaBlock'&&bs&&bs.disabled)&&!(i==='metaFacilityName'&&fs&&fs.disabled))e.value='';});
+    ['metaStartDate','metaEndDate','metaAssessor1','metaAssessor2','metaDesig1','metaDesig2','gdFacilityName','gdFacilityType','gdDistrict','gdBlock','gdStartDate','gdEndDate','gdAssessor1','gdAssessor2','gdDesig1','gdDesig2','gdRemarks'].forEach(i=>set(i,''));
+    const at=$('metaAssessmentType'); if(at)at.dispatchEvent(new Event('change',{bubbles:true}));
+    renderAll(); if(typeof updateAssessorFields==='function')updateAssessorFields(); if(typeof buildSummaryPage==='function')buildSummaryPage();
+  }finally{applying=false;}
+  clearTimeout(timer); dirty=false; lastKey=''; renFrom=null; openKey=null; setStatus('idle');
   const tab=document.querySelector('[data-page="assessmentPage"]'); if(tab)tab.click(); window.scrollTo(0,0);
-  qatToast('New blank entry ready. Set the start date; if one already exists for that date it will open.','ok');
+  qatToast('New blank entry ready. Choose Assessment type, Facility type, District, Block and Facility.','ok');
 }
 const newB=$('compNew'); if(newB)newB.onclick=freshForm;
 window.qatCloud={api:(a,p)=>api(a,p),profile:()=>profile,openRec,nSum,forget};
