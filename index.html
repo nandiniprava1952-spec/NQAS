@@ -55,6 +55,8 @@ button,select,input,textarea{touch-action:manipulation}input,select,textarea{fon
   #nqasActions .btn.qat-save,#kayakalpPage .kk-b.qat-save{background:#166534;border-color:#4ade80;color:#fff;font-weight:700}
   #nqasActions .btn.qat-new{background:#0e7490;border-color:#22d3ee;color:#fff;font-weight:700}
   #nqasActions .btn.qat-new:hover{background:#0b5f78}
+  @keyframes qatPulse{0%,100%{box-shadow:0 0 0 0 #facc1500}50%{box-shadow:0 0 0 5px #facc1599}}
+  .qat-dirty{animation:qatPulse 1.4s ease-in-out infinite;border-color:#facc15 !important}
   #kayakalpPage .kk-b.qat-new{background:#0e7490;border-color:#22d3ee;color:#fff;font-weight:700}
   #kayakalpPage .kk-b.qat-new:hover{background:#0b5f78}
   #qatToast{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:10000;max-width:min(92vw,520px);padding:11px 16px;border-radius:10px;background:#1d1030;border:1px solid #7a4a9f;color:#fff;font:600 14px Calibri,Arial,sans-serif;box-shadow:0 6px 24px #0008;text-align:center}
@@ -1744,7 +1746,7 @@ document.getElementById("btnReset").addEventListener("click", ()=>{
   const lbl=(NQAS_DATA[currentFacility]&&(NQAS_DATA[currentFacility].tab||NQAS_DATA[currentFacility].label))||currentFacility;
   let cloud=false; try{ cloud=!!(window.qatCloud&&window.qatCloud.profile&&window.qatCloud.profile()&&window.qatCloud.canSync&&window.qatCloud.canSync()); }catch(e){}
   const msg = cloud
-    ? "Clear all saved answers for " + lbl + "?\n\nThis also clears the saved cloud copy for this facility, assessment type and start date."
+    ? "Clear all saved answers for " + lbl + "?\n\nThe saved cloud copy is not changed until you tap 💾 Save to cloud."
     : "Clear all saved answers for " + lbl + " on this device?";
   if(confirm(msg)){
     answers[currentFacility] = {};
@@ -2910,7 +2912,7 @@ $('kkType').onchange=function(){persist();cur=this.value;key='';A={};if(cur)load
 document.querySelectorAll('.meta-row,.assess-type-row').forEach(mr=>mr.addEventListener('change',()=>{if(applying)return;if(!suggest())idChange();persist()}));
 $('metaFacilitySel').addEventListener('input',()=>{if(applying)return;if(!fRaw()||$('metaFacilityName').value){if(!suggest())idChange();persist()}});
 $('kkReset').onclick=()=>{if(!cur)return;const cloud=!!(sess()&&ident());
-if(!confirm(cloud?'Clear all Kayakalp answers for this checklist and facility?\n\nThis also clears the saved cloud copy for this facility, assessment type and start date.':'Clear all Kayakalp answers for this checklist and facility on this device?'))return;
+if(!confirm(cloud?'Clear all Kayakalp answers for this checklist and facility?\n\nThe saved cloud copy is not changed until you tap 💾 Save to cloud.':'Clear all Kayakalp answers for this checklist and facility on this device?'))return;
 A={};persist();render();
 if(!cloud){clearTimeout(tm);dirty=false;st('Answers cleared on this device')}};
 /* Excel */
@@ -2963,19 +2965,21 @@ function kkSum(type,ans){const a0=A,c0=cur;try{if(type!==undefined){A=ans||{};cu
 /* cloud sync – reuses the NQAS login session; records are stored as facility_type KK_* */
 const sess=()=>sget('nqas_cloud_session');
 async function api(action,p){const s=sess();if(!s||!s.token)throw new Error('nosession');const r=await fetch(API,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(Object.assign({action,token:s.token},p))}),j=await r.json();if(j.error==='auth'){dispatchEvent(new Event('qatauth'));throw new Error('auth')}return j}
-const st=t=>$('kkSt').textContent=t;
+const st=t=>{$('kkSt').textContent=t;$('kkSave').classList.toggle('qat-dirty',/Unsaved/.test(t))};
+window.qatAsk3=async function(){if(confirm('You have changes that are not saved to the cloud yet.\n\nOK = Save to cloud now and continue\nCancel = more options'))return 'save';return confirm('Continue WITHOUT saving to the cloud?\n\nOK = continue (unsaved changes on this device may be replaced)\nCancel = stay here')?'skip':'stay'};
 window.qatToast=function(msg,kind){let e=document.getElementById('qatToast');if(!e){e=document.createElement('div');e.id='qatToast';e.setAttribute('role','status');e.setAttribute('aria-live','polite');document.body.appendChild(e)}e.className=kind||'';e.textContent=msg;e.style.display='block';clearTimeout(window.qatToastT);window.qatToastT=setTimeout(()=>{e.style.display='none'},msg==='Saving…'?15000:3500)};
 const okGet=ft=>{try{return JSON.parse(localStorage.getItem('qat_ok_'+ft))}catch(e){return null}},okSet=id=>{try{localStorage.setItem('qat_ok_'+id.facility_type,JSON.stringify(id))}catch(e){}};
 const lc=x=>String(x||'').trim().toLowerCase(),sameT=(a,b)=>!!(a&&b&&a.facility_type===b.facility_type&&lc(a.district)===lc(b.district)&&lc(a.facility_name)===lc(b.facility_name)&&lc(a.assessment_type)!==lc(b.assessment_type)),sameD=(a,b)=>!!(a&&b&&a.start_date&&a.facility_type===b.facility_type&&lc(a.district)===lc(b.district)&&lc(a.facility_name)===lc(b.facility_name)&&lc(a.assessment_type)===lc(b.assessment_type)&&(a.start_date||'')!==(b.start_date||''));
 const ident=()=>{const s=sess(),n=fName(),d=s?(s.role==='admin'?dName():s.district):'';return s&&cur&&n&&d?{district:d,facility_type:'KK_'+cur,facility_name:n,assessment_type:($('metaAssessmentType').value||'').trim(),start_date:($('metaStartDate').value||'').trim()}:null};
-function sched(ms){if(applying||!sess())return;dirty=true;clearTimeout(tm);tm=setTimeout(()=>push(),ms==null?2000:ms)}
+function sched(ms){if(applying||!sess())return;dirty=true;st('● Unsaved – tap 💾 Save to cloud')}
+async function unsavedGateKK(){if(!dirty||!sess())return true;const c=await qatAsk3();if(c==='stay')return false;if(c==='save'){clearTimeout(tm);if(!(await push())){alert('Your changes could not be saved to the cloud (offline?). Try again once online.');return false}}else dirty=false;return true}
 async function push(idOv){const id=idOv||ident();if(!id){st(sess()?'○ Select facility to sync':'Offline mode – sign in to sync');return false}
 if(!idOv&&(sameT(okGet(id.facility_type),id)||sameD(okGet(id.facility_type),id))){touch();return false}   /* assessment type just switched: touch() decides first (blank vs copy) */
-if(busy){if(idOv){while(busy)await new Promise(r=>setTimeout(r,200))}else{sched(1500);return false}}busy=true;let ok=false;st('↻ Syncing…');dirty=false;try{const m=getMeta();if(idOv)m.atype=idOv.assessment_type;const j=await api('push',Object.assign({},id,{data:{answers:A,meta:m},summary:kkSum()}));ok=!!j.ok;if(ok)okSet(id);else dirty=true;st(j.ok?'● Synced':'⚠ Offline – will retry');if(!j.ok)sched(20000)}catch(e){dirty=true;st(e.message==='auth'?'Session expired – tap ☁ to sign in':'⚠ Offline – will retry');if(e.message!=='auth')sched(20000)}busy=false;return ok}
+if(busy){if(idOv){while(busy)await new Promise(r=>setTimeout(r,200))}else{dirty=true;return false}}busy=true;let ok=false;st('↻ Syncing…');dirty=false;try{const m=getMeta();if(idOv)m.atype=idOv.assessment_type;const j=await api('push',Object.assign({},id,{data:{answers:A,meta:m},summary:kkSum()}));ok=!!j.ok;if(ok)okSet(id);else dirty=true;st(j.ok?'● Synced':'⚠ Offline – not saved to cloud');}catch(e){dirty=true;st(e.message==='auth'?'Session expired – tap ☁ to sign in':'⚠ Offline – not saved to cloud');}busy=false;return ok}
 async function touch(){if(touching)return;touching=true;try{await touch0()}finally{touching=false}}
 async function touch0(){const id=ident();if(!id){st(sess()?'○ Select facility to sync':'Offline mode – sign in to sync');return}st('↻ Syncing…');let j;try{j=await api('pull',id)}catch(e){st('⚠ Offline');return}if(!j.ok){st('⚠ Offline');return}const has=Object.keys(A).length>0;
 const o=okGet(id.facility_type),sw=sameT(o,id),prev=(o&&o.assessment_type)||'previous',now=id.assessment_type||'this';
-if(sw&&dirty&&has){clearTimeout(tm);if(!(await push(o))){alert('Your latest changes to the "'+prev+'" assessment could not be uploaded yet (offline?).\n\nTo avoid mixing assessments, switch Assessment type back to "'+prev+'", wait for "Synced", then switch again.');st('⚠ Offline');return}}
+if(sw&&dirty&&has){const c=await qatAsk3();if(c==='save'){clearTimeout(tm);if(!(await push(o))){alert('Your latest changes to the "'+prev+'" assessment could not be saved to the cloud (offline?).\n\nTo avoid mixing assessments, switch Assessment type back to "'+prev+'", tap Save to cloud, then switch again.');st('⚠ Offline – not saved to cloud');return}}else if(c==='stay'){alert('Switch Assessment type back to "'+prev+'", tap 💾 Save to cloud, then switch again.');return}else dirty=false}
 if(!j.found){if(!has){okSet(id);st('● Synced');return}if(sw&&confirm('No "'+now+'" assessment is saved for '+id.facility_name+' yet.\n\nOK = start a NEW blank "'+now+'" assessment ("'+prev+'" stays saved in the cloud)\nCancel = copy the current answers into this "'+now+'" assessment')){startBlank(id);return}okSet(id);sched(300);return}
 if(JSON.stringify(j.data.answers||{})===JSON.stringify(A)){okSet(id);st('● Synced');return}if(!has||confirm('A cloud copy exists (saved '+new Date(j.updated_at).toLocaleString()+' by '+(j.updated_by||'someone')+').'+(sw?'\n\nNote: this device currently holds the "'+prev+'" assessment.':'')+'\n\nOK = load the cloud copy (replaces this device\'s copy)\nCancel = keep this device\'s copy and upload it')){applying=true;try{A=j.data.answers||{};const m=j.data.meta||{};for(const i in MF)if(m[MF[i]]!=null)$(i).value=m[MF[i]];$('metaAssessmentType').dispatchEvent(new Event('change',{bubbles:true}));for(const i in MF)if(m[MF[i]]!=null)$(i).value=m[MF[i]];sset(key,{a:A,m:getMeta()});render()}finally{applying=false}okSet(id);st('● Synced')}else{okSet(id);sched(300)}}
 /* new assessment type with no cloud record: clear this device's working copy (answers, remarks, assessor names and dates) */
@@ -2994,7 +2998,7 @@ $('kkTb').innerHTML=v.length?v.map(([r,i])=>{const g=r.district+'|'+r.facility_n
 return `<tr><td>${f?'<b>'+(adm?esc(r.district)+' · ':'')+esc(r.facility_name)+'</b>':''}</td><td>${f?esc((KK[r.facility_type.slice(3)]||{}).label||r.facility_type):''}</td><td>${esc(r.assessment_type||'—')}</td><td>${esc(d)}</td><td>${esc(r.assessors)}</td><td>${new Date(r.updated_at).toLocaleString()}</td><td><button class="kk-b p" data-i="${i}">Open</button></td></tr>`}).join(''):'<tr><td colspan="7">No match.</td></tr>';
 const n=new Set(v.map(x=>x[0].district+'|'+x[0].facility_name+'|'+x[0].facility_type)).size;$('kkCnt').textContent=v.length+' assessment'+(v.length===1?'':'s')+' · '+n+' facilit'+(n===1?'y':'ies');
 P.querySelectorAll('button[data-i]').forEach(b=>b.onclick=async()=>{const r=rs[b.dataset.i];
-if(dirty&&sess()){clearTimeout(tm);const okp=await push();if(!okp&&!confirm('Your latest changes could not be uploaded yet (offline?).\n\nOpen another assessment anyway? Unsynced changes on this device may be replaced.'))return}
+if(dirty&&sess()){if(!(await unsavedGateKK()))return}
 persist();P.innerHTML='';if(adm){const d=$('metaDistrictSel'),o=[...d.options].find(o=>o.text.toLowerCase()===r.district.toLowerCase());if(o){d.value=o.value;d.dispatchEvent(new Event('change',{bubbles:true}))}}
 $('metaStartDate').value=r.start_date||'';const at=$('metaAssessmentType');at.value=r.assessment_type||'';at.dispatchEvent(new Event('change',{bubbles:true}));
 cur=r.facility_type.slice(3);$('kkType').value=cur;const o=[...$('metaFacilityList').options].find(o=>o.value.toLowerCase().indexOf(r.facility_name.toLowerCase()+' (')===0);$('metaFacilitySel').value=o?o.value:r.facility_name;$('metaFacilitySel').dispatchEvent(new Event('input'));key='';A={};loadKey(mk(),false);render();touch()})};
@@ -3004,25 +3008,25 @@ if(!sess()){qatToast('Saved on this device. Sign in to also save to the cloud.',
 if(!ident()){qatToast('Saved on this device. Select the facility to save to the cloud.','warn');return}
 {const id0=ident();if(id0&&(sameT(okGet(id0.facility_type),id0)||sameD(okGet(id0.facility_type),id0)))await touch()}
 clearTimeout(tm);qatToast('Saving…');const ok=await push();
-if(ok)qatToast('✔ Saved to cloud','ok');else qatToast(window.qatNeedAuth&&window.qatNeedAuth()?'Saved on this device. Session expired – tap ☁ to sign in.':'Saved on this device. Cloud save failed – will retry.','warn')};
+if(ok)qatToast('✔ Saved to cloud','ok');else qatToast(window.qatNeedAuth&&window.qatNeedAuth()?'Saved on this device. Session expired – tap ☁ to sign in.':'Saved on this device. Cloud save failed – tap Save to cloud to try again.','warn')};
 $('kkModify').onclick=async()=>{if(!cur){qatToast('Select a Kayakalp checklist first','warn');return}if(!sess()){qatToast('Sign in to modify a saved entry','warn');return}const id0=ident();if(!id0){qatToast('Select the facility first','warn');return}
 let offl=!navigator.onLine;try{offl=offl||localStorage.getItem('qat_net')==='offline'}catch(e){}if(offl){alert('Connect to the internet to load the latest saved entry.');return}
-if(dirty){clearTimeout(tm);if(!(await push())){alert('Your latest changes could not be uploaded yet (offline?). Try again once it shows "Synced".');return}}
+if(dirty){if(!(await unsavedGateKK()))return}
 let j;try{j=await api('list',{})}catch(e){if(e.message!=='auth')qatToast('Could not check the cloud. Try again when online.','warn');return}
 if(!j||!j.ok){qatToast('Could not check the cloud. Try again when online.','warn');return}
 const mine=(j.rows||[]).filter(r=>r.facility_type===id0.facility_type&&lc(r.district)===lc(id0.district)&&lc(r.facility_name)===lc(id0.facility_name));
 if(!mine.length){qatToast('No saved entry for this facility yet','warn');return}
 mine.sort((x,y)=>String(y.updated_at).localeCompare(String(x.updated_at)));await window.qatKk.open(mine[0]);qatToast('Latest saved entry loaded – you can now modify it','ok')};
-addEventListener('online',()=>sched(500));addEventListener('pagehide',()=>{if(ident()){clearTimeout(tm);push()}});
+addEventListener('beforeunload',e=>{if(dirty&&sess()){e.preventDefault();e.returnValue=''}});
 /* dashboard hooks: open a Kayakalp record, switch component, score a record without loading it */
-window.qatKk={score:(type,ans)=>kkSum(type,ans),comp:c=>setComp(c),isKk:()=>$('compKK').classList.contains('on'),
- open:async r=>{if(dirty&&sess()){clearTimeout(tm);const okp=await push();if(!okp&&!confirm('Your latest changes could not be uploaded yet (offline?).\n\nOpen another assessment anyway? Unsynced changes on this device may be replaced.'))return}
+window.qatKk={clear:()=>{dirty=false;st('')},isDirty:()=>dirty&&!!sess(),save:()=>push(),score:(type,ans)=>kkSum(type,ans),comp:c=>setComp(c),isKk:()=>$('compKK').classList.contains('on'),
+ open:async r=>{if(dirty&&sess()){if(!(await unsavedGateKK()))return}
   persist();const adm=(sess()||{}).role==='admin';
   if(adm){const d=$('metaDistrictSel'),o=[...d.options].find(o=>o.text.toLowerCase()===r.district.toLowerCase());if(o){d.value=o.value;d.dispatchEvent(new Event('change',{bubbles:true}))}}
   $('metaStartDate').value=r.start_date||'';const at=$('metaAssessmentType');at.value=r.assessment_type||'';at.dispatchEvent(new Event('change',{bubbles:true}));
   cur=r.facility_type.slice(3);$('kkType').value=cur;const o=[...$('metaFacilityList').options].find(o=>o.value.toLowerCase().indexOf(r.facility_name.toLowerCase()+' (')===0);$('metaFacilitySel').value=o?o.value:r.facility_name;$('metaFacilitySel').dispatchEvent(new Event('input'));key='';A={};loadKey(mk(),false);render();
   if(window.qatKk.isKk())touch();else setComp('kk')}};
-window.qatKk.fresh=async()=>{if(dirty&&sess()&&ident()){clearTimeout(tm);if(!(await push())){alert('Your latest changes could not be uploaded yet (offline?). Try again once it shows "Synced".');return false}}
+window.qatKk.fresh=async()=>{if(dirty&&sess()&&ident()){if(!(await unsavedGateKK()))return false}
 persist();applying=true;try{A={};cur='';key='';$('kkType').value='';if($('kkR'))$('kkR').value='';render()}finally{applying=false}clearTimeout(tm);dirty=false;st('');return true};
 /* component switcher: NQAS | Kayakalp */
 const nav=document.querySelector('.page-nav'),pg=$('kayakalpPage'),tabs=[...document.querySelectorAll('.page-tab:not(.kk-t)')];let lastPage='assessmentPage';
@@ -3061,7 +3065,7 @@ const API_URL='https://script.google.com/macros/s/AKfycbzA_0AzFoP7lbBcmodT3QU8g-
 const $=id=>document.getElementById(id), norm=s=>(s||'').trim().toLowerCase();
 const origSet=Storage.prototype.setItem, origRem=Storage.prototype.removeItem;
 let renFrom=null, openKey=null, openStart='', token='', profile=null, lastKey='', timer=null, pushing=false, applying=false, needAuth=false, dirty=false, pulling=false;
-const schedule=ms=>{dirty=true;clearTimeout(timer);timer=setTimeout(()=>push(),ms==null?2000:ms);};
+const schedule=ms=>{dirty=true;if(profile)setStatus('unsaved');};
 /* a saved record = district + facility type + facility name + ASSESSMENT TYPE. This device keeps ONE working copy per facility type, so remember which record that copy was last in sync with (okId): when the assessment type is switched, the copy must not leak into the other assessment type's record. */
 const okGet=ft=>{try{return JSON.parse(localStorage.getItem('qat_ok_'+ft))}catch(e){return null}};
 const okSet=id=>{try{localStorage.setItem('qat_ok_'+id.facility_type,JSON.stringify(id))}catch(e){}};
@@ -3097,8 +3101,8 @@ function netDot(off){return off?'<svg width="18" height="18" viewBox="0 0 24 24"
 function netTxt(off){const o=LANG()==='or';return off?(o?'ଅଫଲାଇନ୍':'Offline'):(o?'ଅନଲାଇନ୍':'Online');}
 function paintNet(){const off=NET()==='offline';netB.textContent=netTxt(off);netB.title=off?'No connection – changes are saved on this device and sync when back online':'Connected';netB.setAttribute('aria-label',netTxt(off));netB.style.background=off?'#fde047':'#1d1030';netB.style.color=off?'#1f1300':'#22c55e'}
 addEventListener('qatnet',paintNet);setInterval(paintNet,2000);paintNet();
-function setStatus(s){ if(!profile)return;
-  const m={synced:'● Synced',syncing:'↻ Syncing…',offline:'⚠ Offline – will retry',idle:'○ Select facility to sync',auth:'🔒 Session expired – tap to sign in'};
+function setStatus(s){ if(!profile)return; {const sv=document.getElementById('btnSave'); if(sv)sv.classList.toggle('qat-dirty',s==='unsaved');}
+  const m={synced:'● Synced',syncing:'↻ Syncing…',offline:'⚠ Offline – not saved to cloud',unsaved:'● Unsaved – tap 💾 Save to cloud',idle:'○ Select facility to sync',auth:'🔒 Session expired – tap to sign in'};
   const nm=(profile.role==='admin'?'State admin':profile.role==='block'?profile.block+' (Block)':profile.role==='facility'?profile.facility:profile.district);
   const esc2=x=>String(x==null?'':x).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   chip.innerHTML='<span class="qat-cloud">☁ </span><span class="qat-fac-name no-i18n">'+esc2(nm)+'</span><span class="qat-fac-st">  '+esc2(m[s]||s)+'</span>';}
@@ -3152,7 +3156,7 @@ function LANG(){try{return localStorage.getItem('qat_lang')||'en'}catch(e){retur
 function NET(){try{return localStorage.getItem('qat_net')||(navigator.onLine?'online':'offline')}catch(e){return navigator.onLine?'online':'offline'}}
 function LT(s){try{return LANG()==='or'?QAT_I18N.tr(s):s}catch(e){return s}}
 async function signOut(){ if(!confirm('Sign out? Unsynced changes stay on this device and upload next time you sign in.'))return;
-  try{await push();await api('logout',{});}catch(e){} origRem.call(localStorage,'nqas_cloud_session'); location.reload(); }
+  try{ if(dirty||(window.qatKk&&window.qatKk.isDirty&&window.qatKk.isDirty())){const c=await qatAsk3(); if(c==='stay')return; if(c==='save'){ if(dirty)await push(); if(window.qatKk&&window.qatKk.isDirty&&window.qatKk.isDirty())await window.qatKk.save(); }} await api('logout',{});}catch(e){} origRem.call(localStorage,'nqas_cloud_session'); location.reload(); }
 
 function start(p){
   profile=p; needAuth=false; ov.style.display='none'; [chip,listBtn,outBtn].forEach(b=>b.style.display=''); if(dashB)dashB.style.display=(p.role==='facility')?'none':'';
@@ -3178,19 +3182,20 @@ function snapshot(idOv){const m=getMeta();if(idOv)m.assessment_type=idOv.assessm
 async function push(idOv){
   if(!profile)return false; const id=idOv||ident(); if(!id){setStatus('idle');return false;}
   if(!idOv&&sameFacOtherType(okGet(id.facility_type),id)){lastKey='';return false;}   /* assessment type was just switched: pull() must decide first (blank vs copy) */
-  if(pushing){ if(idOv){while(pushing)await new Promise(r=>setTimeout(r,200));} else {schedule(1500);return false;} }
+  if(pushing){ if(idOv){while(pushing)await new Promise(r=>setTimeout(r,200));} else {dirty=true;return false;} }
   pushing=true; setStatus('syncing'); let ok=false; dirty=false;
-  try{const j=await api('push',Object.assign({},id,{data:snapshot(idOv),summary:nSum(currentFacility),prev_start_date:idOv?'':(renFrom||'')})); ok=!!j.ok; if(ok){okSet(id);if(!idOv)renFrom=null;} else dirty=true; setStatus(j.ok?'synced':'offline'); if(!j.ok)schedule(20000);}
-  catch(e){ dirty=true; if(e.message!=='auth'){setStatus('offline');schedule(20000);} }
+  try{const j=await api('push',Object.assign({},id,{data:snapshot(idOv),summary:nSum(currentFacility),prev_start_date:idOv?'':(renFrom||'')})); ok=!!j.ok; if(ok){okSet(id);if(!idOv)renFrom=null;} else dirty=true; setStatus(j.ok?'synced':'offline');}
+  catch(e){ dirty=true; if(e.message!=='auth'){setStatus('offline');} }
   pushing=false; return ok;
 }
 /* Modify: load the LATEST saved entry of this facility so it can be edited and saved over it. No new entry is created. */
+async function unsavedGate(){ if(!dirty||!profile)return true; const c=await qatAsk3(); if(c==='stay')return false; if(c==='save'){clearTimeout(timer); if(!(await push())){alert('Your changes could not be saved to the cloud (offline?). Try again once online.');return false;}} else dirty=false; return true; }
 async function modifyEntry(){
   if(!currentFacility){qatToast('Select a facility type first','warn');return;}
   if(!profile){qatToast('Sign in to modify a saved entry','warn');return;}
   const id0=ident(); if(!id0){qatToast('Select the facility first','warn');return;}
   if(NET()==='offline'){alert('Connect to the internet to load the latest saved entry.');return;}
-  if(dirty){clearTimeout(timer); if(!(await push())){alert('Your latest changes could not be uploaded yet (offline?). Try again once it shows "Synced".');return;}}
+  if(dirty){ if(!(await unsavedGate()))return; }
   let j; try{j=await api('list',{});}catch(e){if(e.message!=='auth')qatToast('Could not check the cloud. Try again when online.','warn');return;}
   if(!j||!j.ok){qatToast('Could not check the cloud. Try again when online.','warn');return;}
   const mine=(j.rows||[]).filter(r=>r.facility_type===id0.facility_type&&norm(r.district)===norm(id0.district)&&norm(r.facility_name)===norm(id0.facility_name));
@@ -3208,7 +3213,7 @@ async function saveNow(){
   if(!ident()){qatToast('Saved on this device. Select the facility to save to the cloud.','warn');return;}
   {const id0=ident(); if(id0&&sameFacOtherType(okGet(id0.facility_type),id0)){lastKey=JSON.stringify(id0); await pull(id0);}}
   clearTimeout(timer); qatToast('Saving…'); const ok=await push();
-  if(ok)qatToast('✔ Saved to cloud','ok'); else qatToast(needAuth?'Saved on this device. Session expired – tap ☁ to sign in.':'Saved on this device. Cloud save failed – will retry.','warn');
+  if(ok)qatToast('✔ Saved to cloud','ok'); else qatToast(needAuth?'Saved on this device. Session expired – tap ☁ to sign in.':'Saved on this device. Cloud save failed – tap Save to cloud to try again.','warn');
 }
 {const sb=$('btnSave'); if(sb) sb.onclick=saveNow;}
 async function pull(id){ if(pulling)return; pulling=true; try{await pull0(id);}finally{pulling=false;} }
@@ -3218,9 +3223,11 @@ async function pull0(id){
   if(!j.ok){setStatus('offline');return;}
   const local=answers[currentFacility]||{}, hasLocal=Object.keys(local).length>0;
   const o=okGet(id.facility_type), sw=sameFacOtherType(o,id), prev=(o&&o.assessment_type)||'previous', now=id.assessment_type||'this';
-  if(sw&&dirty&&hasLocal){   /* upload the other assessment first, so nothing is lost when this device's copy is replaced/cleared */
-    clearTimeout(timer);
-    if(!(await push(o))){alert('Your latest changes to the "'+prev+'" assessment could not be uploaded yet (offline?).\n\nTo avoid mixing assessments, switch Assessment type back to "'+prev+'", wait for "Synced", then switch again.');setStatus('offline');return;}
+  if(sw&&dirty&&hasLocal){
+    const c=await qatAsk3();
+    if(c==='save'){ clearTimeout(timer); if(!(await push(o))){alert('Your latest changes to the "'+prev+'" assessment could not be saved to the cloud (offline?).\n\nTo avoid mixing assessments, switch Assessment type back to "'+prev+'", tap Save to cloud, then switch again.');setStatus('offline');return;} }
+    else if(c==='stay'){alert('Switch Assessment type back to "'+prev+'", tap 💾 Save to cloud, then switch again.');return;}
+    else dirty=false;
   }
   if(!j.found){
     if(!hasLocal){okSet(id);setStatus('synced');return;}
@@ -3303,7 +3310,7 @@ async function openList(){
   $('clX').onclick=()=>ov.style.display='none';
 }
 async function openRec(r){
-  if(dirty&&profile){clearTimeout(timer); const okp=await push(); if(!okp&&!confirm('Your latest changes could not be uploaded yet (offline?).\n\nOpen another assessment anyway? Unsynced changes on this device may be replaced.'))return;}
+  if(dirty&&profile){ if(!(await unsavedGate()))return; }
   ov.style.display='none'; const fd=$('facilityDropdown');
   openKey=r.key||null; openStart=r.start_date||'';   /* load exactly the record that was tapped, whatever the form fields end up showing */
   if(profile.role==='admin'){const o=[...$('metaDistrictSel').options].find(o=>norm(o.textContent)===norm(r.district)); if(o){$('metaDistrictSel').value=o.value;$('metaDistrictSel').dispatchEvent(new Event('change'));}}
@@ -3331,7 +3338,7 @@ async function freshForm(){
   if(isKK){ if(window.qatKk&&window.qatKk.fresh&&!(await window.qatKk.fresh()))return; }
   else{
   const id0=(profile&&currentFacility)?ident():null;
-  if(id0){ clearTimeout(timer); if(dirty&&!(await push())){alert('Your latest changes could not be uploaded yet (offline?). Try again once it shows "Synced".');return;} }
+  if(id0){ if(!(await unsavedGate()))return; }
   else if(currentFacility&&!confirm('This clears the answers on this device for this facility. Start a new blank entry?'))return;
   if(currentFacility)startBlank(id0||{facility_type:currentFacility});
   }
@@ -3360,8 +3367,19 @@ const dashB=$('compDash');if(dashB)dashB.onclick=()=>{if(window.qatDashboard)win
 /* ---------- wiring ---------- */
 setInterval(()=>{ if(!profile||applying)return; const id=ident(), k=id?JSON.stringify(id):''; if(k!==lastKey){lastKey=k; id?pull(id):setStatus('idle');} },1500);
 ['.meta-row','.assess-type-row','#generalDetailsPage','.app-page'].forEach(s=>document.querySelectorAll(s).forEach(el=>el.addEventListener('change',()=>{if(profile&&!applying)schedule();})));
-addEventListener('online',()=>schedule(500));
-addEventListener('pagehide',()=>{if(profile&&ident()){clearTimeout(timer);push();}});
+addEventListener('beforeunload',e=>{if(profile&&dirty){e.preventDefault();e.returnValue='';}});
+/* reminders: leaving the form with changes that are not saved to the cloud */
+const anyDirty=()=>!!(profile&&dirty)||!!(window.qatKk&&window.qatKk.isDirty&&window.qatKk.isDirty());
+let gateBypass=false;
+const homeB=$('compHome');
+if(homeB)homeB.addEventListener('click',async e=>{ if(gateBypass||!anyDirty())return; e.stopImmediatePropagation(); e.preventDefault();
+  const c=await qatAsk3(); if(c==='stay')return;
+  if(c==='save'){ if(profile&&dirty&&!(await push())){alert('Your changes could not be saved to the cloud (offline?). Try again once online.');return;}
+    if(window.qatKk&&window.qatKk.isDirty&&window.qatKk.isDirty()&&!(await window.qatKk.save())){alert('Your changes could not be saved to the cloud (offline?). Try again once online.');return;} }
+  else{ dirty=false; if(window.qatKk&&window.qatKk.clear)window.qatKk.clear(); }
+  gateBypass=true; try{homeB.click();}finally{gateBypass=false;} },true);
+document.querySelectorAll('.page-tab,#compNQAS,#compKK').forEach(b=>b.addEventListener('click',()=>{ if(!anyDirty())return; if(b.classList.contains('page-tab')&&b.dataset.page==='assessmentPage')return; if(window.qatToast)qatToast('⚠ Unsaved changes – tap 💾 Save to cloud before you finish','warn'); }),true);
+addEventListener('visibilitychange',()=>{ if(document.visibilityState==='hidden'&&anyDirty()){ try{document.title='● Unsaved – Quality Toolkit';}catch(e){} } else if(document.visibilityState==='visible'){ try{document.title=document.title.replace(/^● Unsaved – /,'');}catch(e){} } });
 
 if(!API_URL){console.warn('NQAS cloud sync not configured – local-only mode.');return;}
 let saved=null; try{saved=JSON.parse(localStorage.getItem('nqas_cloud_session'));}catch(e){}
