@@ -1738,10 +1738,17 @@ document.querySelectorAll('.page-tab').forEach(btn=>btn.addEventListener('click'
 document.getElementById("facilityDropdown").addEventListener("change", ()=>setTimeout(()=>{ if(currentFacility) { loadPSS(currentFacility); buildSummaryPage(); } },50));
 
 document.getElementById("btnReset").addEventListener("click", ()=>{
-  if(confirm("Clear all saved answers for " + currentFacility + "?")){
+  if(!currentFacility){ if(window.qatToast)qatToast("Select a facility type first","warn"); return; }
+  const lbl=(NQAS_DATA[currentFacility]&&(NQAS_DATA[currentFacility].tab||NQAS_DATA[currentFacility].label))||currentFacility;
+  let cloud=false; try{ cloud=!!(window.qatCloud&&window.qatCloud.profile&&window.qatCloud.profile()&&window.qatCloud.canSync&&window.qatCloud.canSync()); }catch(e){}
+  const msg = cloud
+    ? "Clear all saved answers for " + lbl + "?\n\nThis also clears the saved cloud copy for this facility, assessment type and start date."
+    : "Clear all saved answers for " + lbl + " on this device?";
+  if(confirm(msg)){
     answers[currentFacility] = {};
     saveAnswers(currentFacility);
     renderAll();
+    if(!cloud && window.qatToast)qatToast("Answers cleared on this device","ok");
   }
 });
 
@@ -2900,7 +2907,10 @@ document.querySelectorAll('#kkNav .page-tab').forEach(b=>b.onclick=()=>{document
 $('kkType').onchange=function(){persist();cur=this.value;key='';A={};if(cur)loadKey(mk(),false);render();persist();touch()};
 document.querySelectorAll('.meta-row,.assess-type-row').forEach(mr=>mr.addEventListener('change',()=>{if(applying)return;if(!suggest())idChange();persist()}));
 $('metaFacilitySel').addEventListener('input',()=>{if(applying)return;if(!fRaw()||$('metaFacilityName').value){if(!suggest())idChange();persist()}});
-$('kkReset').onclick=()=>{if(cur&&confirm('Clear all Kayakalp answers for this checklist and facility?')){A={};persist();render()}};
+$('kkReset').onclick=()=>{if(!cur)return;const cloud=!!(sess()&&ident());
+if(!confirm(cloud?'Clear all Kayakalp answers for this checklist and facility?\n\nThis also clears the saved cloud copy for this facility, assessment type and start date.':'Clear all Kayakalp answers for this checklist and facility on this device?'))return;
+A={};persist();render();
+if(!cloud){clearTimeout(tm);dirty=false;st('Answers cleared on this device')}};
 /* Excel */
 const buf=b=>Uint8Array.from(atob(b),c=>c.charCodeAt(0));
 const tplBuf=(type,builtin)=>(!builtin&&tplBytes&&tplType===type)?tplBytes.slice(0):buf(TPL[type]).buffer;
@@ -3342,7 +3352,7 @@ async function freshForm(){
   qatToast(isKK?'New blank Kayakalp entry ready. Choose Assessment type, District, Block, Facility and checklist.':'New blank entry ready. Choose Assessment type, Facility type, District, Block and Facility.','ok');
 }
 const newB=$('compNew'); if(newB)newB.onclick=freshForm;
-window.qatCloud={api:(a,p)=>api(a,p),profile:()=>profile,openRec,nSum,forget};
+window.qatCloud={api:(a,p)=>api(a,p),profile:()=>profile,canSync:()=>!!(profile&&ident()),openRec,nSum,forget};
 const dashB=$('compDash');if(dashB)dashB.onclick=()=>{if(window.qatDashboard)window.qatDashboard.open();};
 
 /* ---------- wiring ---------- */
