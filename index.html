@@ -55,6 +55,8 @@ button,select,input,textarea{touch-action:manipulation}input,select,textarea{fon
   #nqasActions .btn.qat-save,#kayakalpPage .kk-b.qat-save{background:#166534;border-color:#4ade80;color:#fff;font-weight:700}
   #nqasActions .btn.qat-new{background:#0e7490;border-color:#22d3ee;color:#fff;font-weight:700}
   #nqasActions .btn.qat-new:hover{background:#0b5f78}
+  #kayakalpPage .kk-b.qat-new{background:#0e7490;border-color:#22d3ee;color:#fff;font-weight:700}
+  #kayakalpPage .kk-b.qat-new:hover{background:#0b5f78}
   #qatToast{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:10000;max-width:min(92vw,520px);padding:11px 16px;border-radius:10px;background:#1d1030;border:1px solid #7a4a9f;color:#fff;font:600 14px Calibri,Arial,sans-serif;box-shadow:0 6px 24px #0008;text-align:center}
   #qatToast.ok{border-color:#4ade80}#qatToast.warn{border-color:#fbbf24}
   .qat-status{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;width:100%;margin:0 0 10px}
@@ -882,7 +884,7 @@ button,select,input,textarea{touch-action:manipulation}input,select,textarea{fon
 <div class="score-panel"><div class="section-title">Kayakalp — Clean Hospitals Assessment</div>
 <p class="kk-n" style="margin:0 0 10px">Uses the district / block / facility / assessment details selected in the bar above. Scoring: 0 Non-compliant · 1 Partial · 2 Compliant. Method: OB Observation · SI Staff Interview · PI Patient Interview · RR Record Review.</p>
 <div class="kk-row"><select id="kkType" style="min-width:270px;font-weight:700"><option value="">Select Kayakalp checklist…</option></select>
-<button class="kk-b qat-save" id="kkSave" type="button">💾 Save to cloud</button><button class="kk-b" id="kkBlank">Download Blank</button><button class="kk-b" id="kkFill">Download Filled</button><button class="kk-b p" id="kkUp">Upload filled XLSX</button><input type="file" id="kkFile" accept=".xlsx" hidden><button class="kk-b" id="kkModify" type="button">✎ Modify</button><button class="kk-b" id="kkList">Saved Kayakalp assessments</button><button class="kk-b" id="kkReset">Reset answers</button><span class="kk-n" id="kkSt"></span></div>
+<button class="kk-b qat-save" id="kkSave" type="button">💾 Save to cloud</button><button class="kk-b" id="kkBlank">Download Blank</button><button class="kk-b" id="kkFill">Download Filled</button><button class="kk-b p" id="kkUp">Upload filled XLSX</button><input type="file" id="kkFile" accept=".xlsx" hidden><button class="kk-b qat-new" id="kkModify" type="button" title="Load the latest saved entry for this facility and modify it">Modify</button><button class="kk-b" id="kkList">Saved Kayakalp assessments</button><button class="kk-b" id="kkReset">Reset answers</button><span class="kk-n" id="kkSt"></span></div>
 <div id="kkSaved"></div></div>
 <div id="kkV1" class="kk-v on"><div class="score-panel" id="kkTop"></div><div id="kkListEl"></div></div>
 <div id="kkV2" class="kk-v"></div>
