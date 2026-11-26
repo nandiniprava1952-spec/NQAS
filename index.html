@@ -882,7 +882,7 @@ button,select,input,textarea{touch-action:manipulation}input,select,textarea{fon
 <div class="score-panel"><div class="section-title">Kayakalp — Clean Hospitals Assessment</div>
 <p class="kk-n" style="margin:0 0 10px">Uses the district / block / facility / assessment details selected in the bar above. Scoring: 0 Non-compliant · 1 Partial · 2 Compliant. Method: OB Observation · SI Staff Interview · PI Patient Interview · RR Record Review.</p>
 <div class="kk-row"><select id="kkType" style="min-width:270px;font-weight:700"><option value="">Select Kayakalp checklist…</option></select>
-<button class="kk-b qat-save" id="kkSave" type="button">💾 Save to cloud</button><button class="kk-b" id="kkBlank">Download Blank</button><button class="kk-b" id="kkFill">Download Filled</button><button class="kk-b p" id="kkUp">Upload filled XLSX</button><input type="file" id="kkFile" accept=".xlsx" hidden><button class="kk-b" id="kkList">Saved Kayakalp assessments</button><button class="kk-b" id="kkReset">Reset answers</button><span class="kk-n" id="kkSt"></span></div>
+<button class="kk-b qat-save" id="kkSave" type="button">💾 Save to cloud</button><button class="kk-b" id="kkBlank">Download Blank</button><button class="kk-b" id="kkFill">Download Filled</button><button class="kk-b p" id="kkUp">Upload filled XLSX</button><input type="file" id="kkFile" accept=".xlsx" hidden><button class="kk-b" id="kkModify" type="button">✎ Modify</button><button class="kk-b" id="kkList">Saved Kayakalp assessments</button><button class="kk-b" id="kkReset">Reset answers</button><span class="kk-n" id="kkSt"></span></div>
 <div id="kkSaved"></div></div>
 <div id="kkV1" class="kk-v on"><div class="score-panel" id="kkTop"></div><div id="kkListEl"></div></div>
 <div id="kkV2" class="kk-v"></div>
@@ -2954,11 +2954,11 @@ async function api(action,p){const s=sess();if(!s||!s.token)throw new Error('nos
 const st=t=>$('kkSt').textContent=t;
 window.qatToast=function(msg,kind){let e=document.getElementById('qatToast');if(!e){e=document.createElement('div');e.id='qatToast';e.setAttribute('role','status');e.setAttribute('aria-live','polite');document.body.appendChild(e)}e.className=kind||'';e.textContent=msg;e.style.display='block';clearTimeout(window.qatToastT);window.qatToastT=setTimeout(()=>{e.style.display='none'},msg==='Saving…'?15000:3500)};
 const okGet=ft=>{try{return JSON.parse(localStorage.getItem('qat_ok_'+ft))}catch(e){return null}},okSet=id=>{try{localStorage.setItem('qat_ok_'+id.facility_type,JSON.stringify(id))}catch(e){}};
-const lc=x=>String(x||'').trim().toLowerCase(),sameT=(a,b)=>!!(a&&b&&a.facility_type===b.facility_type&&lc(a.district)===lc(b.district)&&lc(a.facility_name)===lc(b.facility_name)&&lc(a.assessment_type)!==lc(b.assessment_type));
-const ident=()=>{const s=sess(),n=fName(),d=s?(s.role==='admin'?dName():s.district):'';return s&&cur&&n&&d?{district:d,facility_type:'KK_'+cur,facility_name:n,assessment_type:($('metaAssessmentType').value||'').trim()}:null};
+const lc=x=>String(x||'').trim().toLowerCase(),sameT=(a,b)=>!!(a&&b&&a.facility_type===b.facility_type&&lc(a.district)===lc(b.district)&&lc(a.facility_name)===lc(b.facility_name)&&lc(a.assessment_type)!==lc(b.assessment_type)),sameD=(a,b)=>!!(a&&b&&a.start_date&&a.facility_type===b.facility_type&&lc(a.district)===lc(b.district)&&lc(a.facility_name)===lc(b.facility_name)&&lc(a.assessment_type)===lc(b.assessment_type)&&(a.start_date||'')!==(b.start_date||''));
+const ident=()=>{const s=sess(),n=fName(),d=s?(s.role==='admin'?dName():s.district):'';return s&&cur&&n&&d?{district:d,facility_type:'KK_'+cur,facility_name:n,assessment_type:($('metaAssessmentType').value||'').trim(),start_date:($('metaStartDate').value||'').trim()}:null};
 function sched(ms){if(applying||!sess())return;dirty=true;clearTimeout(tm);tm=setTimeout(()=>push(),ms==null?2000:ms)}
 async function push(idOv){const id=idOv||ident();if(!id){st(sess()?'○ Select facility to sync':'Offline mode – sign in to sync');return false}
-if(!idOv&&sameT(okGet(id.facility_type),id)){touch();return false}   /* assessment type just switched: touch() decides first (blank vs copy) */
+if(!idOv&&(sameT(okGet(id.facility_type),id)||sameD(okGet(id.facility_type),id))){touch();return false}   /* assessment type just switched: touch() decides first (blank vs copy) */
 if(busy){if(idOv){while(busy)await new Promise(r=>setTimeout(r,200))}else{sched(1500);return false}}busy=true;let ok=false;st('↻ Syncing…');dirty=false;try{const m=getMeta();if(idOv)m.atype=idOv.assessment_type;const j=await api('push',Object.assign({},id,{data:{answers:A,meta:m},summary:kkSum()}));ok=!!j.ok;if(ok)okSet(id);else dirty=true;st(j.ok?'● Synced':'⚠ Offline – will retry');if(!j.ok)sched(20000)}catch(e){dirty=true;st(e.message==='auth'?'Session expired – tap ☁ to sign in':'⚠ Offline – will retry');if(e.message!=='auth')sched(20000)}busy=false;return ok}
 async function touch(){if(touching)return;touching=true;try{await touch0()}finally{touching=false}}
 async function touch0(){const id=ident();if(!id){st(sess()?'○ Select facility to sync':'Offline mode – sign in to sync');return}st('↻ Syncing…');let j;try{j=await api('pull',id)}catch(e){st('⚠ Offline');return}if(!j.ok){st('⚠ Offline');return}const has=Object.keys(A).length>0;
@@ -2969,13 +2969,14 @@ if(JSON.stringify(j.data.answers||{})===JSON.stringify(A)){okSet(id);st('● Syn
 /* new assessment type with no cloud record: clear this device's working copy (answers, remarks, assessor names and dates) */
 function startBlank(id){applying=true;try{A={};if($('kkR'))$('kkR').value='';['metaStartDate','metaEndDate','metaAssessor1','metaAssessor2','metaDesig1','metaDesig2'].forEach(i=>{const e=$(i);if(e)e.value=''});sset(key,{a:A,m:getMeta()});render()}finally{applying=false}clearTimeout(tm);dirty=false;okSet(id);st('● Synced')}
 $('metaAssessmentType').addEventListener('change',()=>{if(cur&&!applying&&sess())touch()});
+$('metaStartDate').addEventListener('change',()=>{if(cur&&!applying&&sess()&&$('compKK').classList.contains('on'))touch()});
 $('kkList').onclick=async()=>{const P=$('kkSaved');P.innerHTML='<p class="kk-n">Loading…</p>';let j;try{j=await api('list',{})}catch(e){P.innerHTML='<p class="bad">'+(e.message==='nosession'?'Sign in with your district login to see saved assessments (reload the page for the login prompt).':'Could not load (offline or session expired).')+'</p>';return}
 const AT=['Self','Internal Assessment 1','Internal Assessment 2','Internal Assessment 3','Peer','District','State'],rk=t=>{const i=AT.indexOf(t);return i<0?99:i},dm=d=>/^\d{4}-\d{2}-\d{2}$/.test(d||'')?d.slice(8)+'-'+d.slice(5,7)+'-'+d.slice(0,4):(d||'');
 const rs=(j.rows||[]).filter(r=>/^KK_/.test(r.facility_type)),adm=(sess()||{}).role==='admin';
 rs.sort((a,b)=>String(a.district+'|'+a.facility_name+'|'+a.facility_type).localeCompare(String(b.district+'|'+b.facility_name+'|'+b.facility_type))||rk(a.assessment_type)-rk(b.assessment_type)||String(a.start_date||'').localeCompare(String(b.start_date||''))||String(a.updated_at).localeCompare(String(b.updated_at)));
 if(!rs.length){P.innerHTML='<p class="kk-n">No Kayakalp assessments saved yet.</p>';return}
 const cn=fName(),pre=rs.some(r=>lc(r.facility_name)===lc(cn))?cn:'';
-P.innerHTML='<p class="kk-n">Each facility keeps a separate record for every assessment type (Self, Internal, Peer, District, State). Search a facility to see all of them.</p><input id="kkQ" type="search" placeholder="Search facility, district or assessment type…" value="'+esc(pre)+'" style="width:100%;box-sizing:border-box;padding:8px;margin:4px 0;border:1px solid #bbb;border-radius:6px;font-size:14px"><div id="kkCnt" class="kk-n"></div><div style="overflow-x:auto"><table><thead><tr><th>Facility</th><th>Checklist</th><th>Assessment</th><th>Dates</th><th>Assessors</th><th>Last saved</th><th></th></tr></thead><tbody id="kkTb"></tbody></table></div>';
+P.innerHTML='<p class="kk-n">Each facility keeps a separate record for every assessment type and start date (Self, Internal, Peer, District, State). Search a facility to see all of them.</p><input id="kkQ" type="search" placeholder="Search facility, district or assessment type…" value="'+esc(pre)+'" style="width:100%;box-sizing:border-box;padding:8px;margin:4px 0;border:1px solid #bbb;border-radius:6px;font-size:14px"><div id="kkCnt" class="kk-n"></div><div style="overflow-x:auto"><table><thead><tr><th>Facility</th><th>Checklist</th><th>Assessment</th><th>Dates</th><th>Assessors</th><th>Last saved</th><th></th></tr></thead><tbody id="kkTb"></tbody></table></div>';
 const paint=()=>{const q=lc($('kkQ').value),v=[];rs.forEach((r,i)=>{if(!q||lc([r.district,r.facility_name,r.assessment_type,r.assessors,(KK[r.facility_type.slice(3)]||{}).label].join(' ')).indexOf(q)>=0)v.push([r,i])});let last='';
 $('kkTb').innerHTML=v.length?v.map(([r,i])=>{const g=r.district+'|'+r.facility_name+'|'+r.facility_type,f=g!==last;last=g;const d=(r.start_date||r.end_date)?dm(r.start_date)+(r.end_date&&r.end_date!==r.start_date?' → '+dm(r.end_date):''):'';
 return `<tr><td>${f?'<b>'+(adm?esc(r.district)+' · ':'')+esc(r.facility_name)+'</b>':''}</td><td>${f?esc((KK[r.facility_type.slice(3)]||{}).label||r.facility_type):''}</td><td>${esc(r.assessment_type||'—')}</td><td>${esc(d)}</td><td>${esc(r.assessors)}</td><td>${new Date(r.updated_at).toLocaleString()}</td><td><button class="kk-b p" data-i="${i}">Open</button></td></tr>`}).join(''):'<tr><td colspan="7">No match.</td></tr>';
@@ -2983,24 +2984,34 @@ const n=new Set(v.map(x=>x[0].district+'|'+x[0].facility_name+'|'+x[0].facility_
 P.querySelectorAll('button[data-i]').forEach(b=>b.onclick=async()=>{const r=rs[b.dataset.i];
 if(dirty&&sess()){clearTimeout(tm);const okp=await push();if(!okp&&!confirm('Your latest changes could not be uploaded yet (offline?).\n\nOpen another assessment anyway? Unsynced changes on this device may be replaced.'))return}
 persist();P.innerHTML='';if(adm){const d=$('metaDistrictSel'),o=[...d.options].find(o=>o.text.toLowerCase()===r.district.toLowerCase());if(o){d.value=o.value;d.dispatchEvent(new Event('change',{bubbles:true}))}}
-const at=$('metaAssessmentType');at.value=r.assessment_type||'';at.dispatchEvent(new Event('change',{bubbles:true}));
+$('metaStartDate').value=r.start_date||'';const at=$('metaAssessmentType');at.value=r.assessment_type||'';at.dispatchEvent(new Event('change',{bubbles:true}));
 cur=r.facility_type.slice(3);$('kkType').value=cur;const o=[...$('metaFacilityList').options].find(o=>o.value.toLowerCase().indexOf(r.facility_name.toLowerCase()+' (')===0);$('metaFacilitySel').value=o?o.value:r.facility_name;$('metaFacilitySel').dispatchEvent(new Event('input'));key='';A={};loadKey(mk(),false);render();touch()})};
 $('kkQ').oninput=paint;paint()};
 $('kkSave').onclick=async()=>{if(!cur){qatToast('Select a Kayakalp checklist first','warn');return}persist();
 if(!sess()){qatToast('Saved on this device. Sign in to also save to the cloud.','warn');return}
 if(!ident()){qatToast('Saved on this device. Select the facility to save to the cloud.','warn');return}
-{const id0=ident();if(id0&&sameT(okGet(id0.facility_type),id0))await touch()}
+{const id0=ident();if(id0&&(sameT(okGet(id0.facility_type),id0)||sameD(okGet(id0.facility_type),id0)))await touch()}
 clearTimeout(tm);qatToast('Saving…');const ok=await push();
 if(ok)qatToast('✔ Saved to cloud','ok');else qatToast(window.qatNeedAuth&&window.qatNeedAuth()?'Saved on this device. Session expired – tap ☁ to sign in.':'Saved on this device. Cloud save failed – will retry.','warn')};
+$('kkModify').onclick=async()=>{if(!cur){qatToast('Select a Kayakalp checklist first','warn');return}if(!sess()){qatToast('Sign in to modify a saved entry','warn');return}const id0=ident();if(!id0){qatToast('Select the facility first','warn');return}
+let offl=!navigator.onLine;try{offl=offl||localStorage.getItem('qat_net')==='offline'}catch(e){}if(offl){alert('Connect to the internet to load the latest saved entry.');return}
+if(dirty){clearTimeout(tm);if(!(await push())){alert('Your latest changes could not be uploaded yet (offline?). Try again once it shows "Synced".');return}}
+let j;try{j=await api('list',{})}catch(e){if(e.message!=='auth')qatToast('Could not check the cloud. Try again when online.','warn');return}
+if(!j||!j.ok){qatToast('Could not check the cloud. Try again when online.','warn');return}
+const mine=(j.rows||[]).filter(r=>r.facility_type===id0.facility_type&&lc(r.district)===lc(id0.district)&&lc(r.facility_name)===lc(id0.facility_name));
+if(!mine.length){qatToast('No saved entry for this facility yet','warn');return}
+mine.sort((x,y)=>String(y.updated_at).localeCompare(String(x.updated_at)));await window.qatKk.open(mine[0]);qatToast('Latest saved entry loaded – you can now modify it','ok')};
 addEventListener('online',()=>sched(500));addEventListener('pagehide',()=>{if(ident()){clearTimeout(tm);push()}});
 /* dashboard hooks: open a Kayakalp record, switch component, score a record without loading it */
 window.qatKk={score:(type,ans)=>kkSum(type,ans),comp:c=>setComp(c),isKk:()=>$('compKK').classList.contains('on'),
  open:async r=>{if(dirty&&sess()){clearTimeout(tm);const okp=await push();if(!okp&&!confirm('Your latest changes could not be uploaded yet (offline?).\n\nOpen another assessment anyway? Unsynced changes on this device may be replaced.'))return}
   persist();const adm=(sess()||{}).role==='admin';
   if(adm){const d=$('metaDistrictSel'),o=[...d.options].find(o=>o.text.toLowerCase()===r.district.toLowerCase());if(o){d.value=o.value;d.dispatchEvent(new Event('change',{bubbles:true}))}}
-  const at=$('metaAssessmentType');at.value=r.assessment_type||'';at.dispatchEvent(new Event('change',{bubbles:true}));
+  $('metaStartDate').value=r.start_date||'';const at=$('metaAssessmentType');at.value=r.assessment_type||'';at.dispatchEvent(new Event('change',{bubbles:true}));
   cur=r.facility_type.slice(3);$('kkType').value=cur;const o=[...$('metaFacilityList').options].find(o=>o.value.toLowerCase().indexOf(r.facility_name.toLowerCase()+' (')===0);$('metaFacilitySel').value=o?o.value:r.facility_name;$('metaFacilitySel').dispatchEvent(new Event('input'));key='';A={};loadKey(mk(),false);render();
   if(window.qatKk.isKk())touch();else setComp('kk')}};
+window.qatKk.fresh=async()=>{if(dirty&&sess()&&ident()){clearTimeout(tm);if(!(await push())){alert('Your latest changes could not be uploaded yet (offline?). Try again once it shows "Synced".');return false}}
+persist();applying=true;try{A={};cur='';key='';$('kkType').value='';if($('kkR'))$('kkR').value='';render()}finally{applying=false}clearTimeout(tm);dirty=false;st('');return true};
 /* component switcher: NQAS | Kayakalp */
 const nav=document.querySelector('.page-nav'),pg=$('kayakalpPage'),tabs=[...document.querySelectorAll('.page-tab:not(.kk-t)')];let lastPage='assessmentPage';
 tabs.forEach(b=>b.addEventListener('click',()=>{lastPage=b.dataset.page}));
@@ -3261,7 +3272,7 @@ async function openList(){
   const curName=(($('metaFacilityName').value||$('metaFacilitySel').value||'')).trim(), pre=all.some(r=>norm(r.facility_name)===norm(curName))?curName:'';
   const th='style="padding:6px"';
   box('<h3 style="margin:0 0 6px">Saved assessments'+(profile.role==='admin'?' (all districts)':profile.role==='block'?' – '+profile.block+', '+profile.district:profile.role==='facility'?' – '+profile.facility:' – '+profile.district)+'</h3>'+
-    '<p style="margin:0 0 8px;opacity:.75;font-size:12.5px">Each facility keeps a separate record for every assessment type (Self, Internal, Peer, District, State). Search a facility to see all of them.</p>'+
+    '<p style="margin:0 0 8px;opacity:.75;font-size:12.5px">Each facility keeps a separate record for every assessment type and start date (Self, Internal, Peer, District, State). Search a facility to see all of them.</p>'+
     '<input id="clQ" type="search" placeholder="Search facility, district or assessment type…" value="'+esc2(pre)+'" style="width:100%;margin:0 0 4px;padding:9px;border-radius:8px;border:1px solid #6b3a8f;background:#140c21;color:#fff;font-size:14px">'+
     '<div id="clCnt" style="font-size:12px;opacity:.7;margin:0 0 8px"></div>'+
     '<div style="overflow-x:auto"><table style="width:100%;font-size:13px;border-collapse:collapse"><thead><tr style="text-align:left;opacity:.7"><th '+th+'>Facility</th><th>Facility type</th><th>Assessment</th><th>Dates</th><th>Assessors</th><th>Last saved</th><th></th></tr></thead><tbody id="clRows"></tbody></table></div>'+
@@ -3301,20 +3312,23 @@ function forget(r){ try{ const id=profile?ident():null; if(!id||id.facility_type
   dirty=false; clearTimeout(timer); const n=ident(); lastKey=n?JSON.stringify(n):''; }catch(e){} }
 /* "+ New entry" (top bar, next to Home): open a fresh blank form for the selected facility. Answers, remarks, assessors and dates are cleared; the start date is set to today so the new entry gets its own record, and if one already exists for that date the normal check loads it instead of overwriting it. */
 async function freshForm(){
-  const cov=$('cvN'), kk=$('compKK');
+  const cov=$('cvN'), kk=$('compKK'); let isKK=false;
   if(cov&&cov.offsetParent!==null)cov.click();   /* leave the cover page */
-  else if(kk&&kk.classList.contains('on')){qatToast('New entry opens a separate record in NQAS. Kayakalp keeps one record per assessment type; use Reset answers there.','warn');return;}
+  else if(kk&&kk.classList.contains('on')){isKK=true;}
   else{const nq=$('compNQAS'); if(nq&&!nq.classList.contains('on'))nq.click();}
+  if(isKK){ if(window.qatKk&&window.qatKk.fresh&&!(await window.qatKk.fresh()))return; }
+  else{
   const id0=(profile&&currentFacility)?ident():null;
   if(id0){ clearTimeout(timer); if(dirty&&!(await push())){alert('Your latest changes could not be uploaded yet (offline?). Try again once it shows "Synced".');return;} }
   else if(currentFacility&&!confirm('This clears the answers on this device for this facility. Start a new blank entry?'))return;
   if(currentFacility)startBlank(id0||{facility_type:currentFacility});
+  }
   /* blank EVERY field: assessment type, facility type, district, block, facility, assessors, dates */
   applying=true;
   try{
     const set=(i,v)=>{const e=$(i); if(e&&!e.disabled)e.value=v;};
     ['metaAssessmentType','gdAssessmentType'].forEach(i=>set(i,''));
-    currentFacility=''; const fd=$('facilityDropdown'); if(fd)fd.value='';
+    if(!isKK){currentFacility=''; const fd=$('facilityDropdown'); if(fd)fd.value='';}
     const ds=$('metaDistrictSel'); if(ds&&!ds.disabled){ds.value='';ds.dispatchEvent(new Event('change',{bubbles:true}));}   /* resets block + facility lists */
     const bs=$('metaBlockSel'); if(bs&&!bs.disabled){bs.value='';bs.dispatchEvent(new Event('change',{bubbles:true}));}
     const fs=$('metaFacilitySel'); if(fs&&!fs.disabled){fs.value='';$('metaFacilityName').value='';}
@@ -3324,8 +3338,8 @@ async function freshForm(){
     renderAll(); if(typeof updateAssessorFields==='function')updateAssessorFields(); if(typeof buildSummaryPage==='function')buildSummaryPage();
   }finally{applying=false;}
   clearTimeout(timer); dirty=false; lastKey=''; renFrom=null; openKey=null; setStatus('idle');
-  const tab=document.querySelector('[data-page="assessmentPage"]'); if(tab)tab.click(); window.scrollTo(0,0);
-  qatToast('New blank entry ready. Choose Assessment type, Facility type, District, Block and Facility.','ok');
+  if(!isKK){const tab=document.querySelector('[data-page="assessmentPage"]'); if(tab)tab.click();} window.scrollTo(0,0);
+  qatToast(isKK?'New blank Kayakalp entry ready. Choose Assessment type, District, Block, Facility and checklist.':'New blank entry ready. Choose Assessment type, Facility type, District, Block and Facility.','ok');
 }
 const newB=$('compNew'); if(newB)newB.onclick=freshForm;
 window.qatCloud={api:(a,p)=>api(a,p),profile:()=>profile,openRec,nSum,forget};
